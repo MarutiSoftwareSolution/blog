@@ -39,7 +39,6 @@ To get the core logic of Blogfront running locally:
    ```bash
    dotnet run --project Blog.Web
    ```
-   Navigate to `https://localhost:5001`!
 
 ---
 
