@@ -32,14 +32,25 @@ To get the core logic of Blogfront running locally:
    dotnet restore Blog.slnx
    ```
 
-3. **Configure the Database:**
-   Copy `appsettings.json.example` to `appsettings.json` (you'll need to create this from your local secure config since it's git-ignored) and set your connection strings.
-
-4. **Run the Application:**
+3. **Configure the Environment:**
+   Copy `appsettings.example.json` to `appsettings.json` inside the `Blog.Web` directory and configure your Database connection string:
    ```bash
-   dotnet run --project Blog.Web
+   cd Blog.Web
+   cp appsettings.example.json appsettings.json
    ```
-   Navigate to `https://localhost:5001`!
+
+4. **Initialize the Database:**
+   Blogfront uses Entity Framework Core and can automatically configure the database on first run:
+   ```bash
+   dotnet watch run
+   ```
+   *(Note: The application is designed to auto-apply migrations and seed initial roles on the very first run!)*
+
+   **Alternative (Manual SQL Setup):**
+   If you prefer to manually set up your target database or are attaching Blogfront to a separate container, you can execute the raw standard SQL found in the root directory:
+   ```bash
+   # Use your preferred SQL client to run init.sql against your database
+   ```
 
 ---
 
@@ -86,10 +97,3 @@ Blogfront offers powerful, zero-code aesthetic customization:
 
 ---
 
-## 🤝 Contributing
-
-We welcome contributions! Please follow the code style guidelines. Note that user-specific config files, `.vs/` directories, and AI-agent scaffolding (`.gsd/`) are explicitly ignored to keep the repository clean.
-
-## 📄 License
-
-This project is licensed under the MIT License.

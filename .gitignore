@@ -9,6 +9,8 @@
 appsettings.json
 appsettings.Development.json
 appsettings.*.json
+!appsettings.example.json
+!Blog.Web/appsettings.example.json
 *.sqlite
 *.sqlite3
 *.db
