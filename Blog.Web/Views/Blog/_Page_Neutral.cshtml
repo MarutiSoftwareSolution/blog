@@ -1,0 +1,29 @@
+@model Blog.Core.Domain.Page
+
+<!-- Neutral: dashed borders, minimal -->
+<div class="container xl:max-w-6xl mx-auto px-4 py-6 lg:py-10">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-6" style="color: var(--muted-foreground);">
+        <a href="/" class="hover:opacity-80">Home</a>
+        <i class="bi bi-chevron-right text-xs"></i>
+        <span>@Model.Title</span>
+    </div>
+
+    <article class="max-w-4xl mx-auto w-full">
+        <header class="mb-8 border-b border-dashed pb-6" style="border-color: var(--border);">
+            <h1 class="text-3xl md:text-4xl font-medium leading-tight">@Model.Title</h1>
+        </header>
+
+        @if (!string.IsNullOrEmpty(Model.FeaturedImageUrl))
+        {
+            <div class="mb-8 overflow-hidden">
+                <img src="@Model.FeaturedImageUrl" alt="@Model.Title" class="w-full h-auto object-cover" />
+            </div>
+        }
+
+        <div class="post-prose" style="font-family: var(--font-body); line-height: 1.8;">
+            @Html.Raw(Model.Content)
+        </div>
+    </article>
+</div>

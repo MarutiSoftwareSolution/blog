@@ -1,0 +1,41 @@
+@{
+    Layout = "_SetupLayout";
+    ViewData["Title"] = "Blog Details";
+}
+
+<div class="setup-container">
+    <div class="setup-card">
+        <div class="setup-step-badge">Step 2 of 4</div>
+        <h1 class="setup-title">Name Your Blog</h1>
+        <p class="setup-subtitle">Give your blog a name and tagline.</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-error">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form method="post" action="/setup/savestep2">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="blogName">Blog Name *</label>
+                <input type="text" id="blogName" name="blogName" class="form-control" placeholder="My Awesome Blog" required autofocus />
+            </div>
+            <div class="form-group">
+                <label for="tagline">Tagline</label>
+                <input type="text" id="tagline" name="tagline" class="form-control" placeholder="Thoughts, stories and ideas." />
+            </div>
+            <div class="setup-steps-preview">
+                <div class="step-dot"></div>
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">Continue →</button>
+        </form>
+    </div>
+</div>

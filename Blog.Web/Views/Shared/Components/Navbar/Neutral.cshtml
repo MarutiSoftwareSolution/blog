@@ -1,0 +1,131 @@
+@model Blog.Web.Models.NavbarViewModel
+@{
+    var sortedPages = Model.Pages.OrderBy(p => p.SortOrder).ToList();
+    var logoUrl = !string.IsNullOrEmpty(Model.SiteLogoUrl)
+        ? Model.SiteLogoUrl
+        : $"https://placehold.co/400x120/171717/FFFFFF?text={Uri.EscapeDataString(Model.SiteName.ToUpper())}";
+}
+
+@* NEUTRAL — Newspaper Masthead: thin metadata strip · large centered name · slim icon/nav bar *@
+<header x-data="{ searchOpen: false, mobileOpen: false }" class="w-full" style="background: var(--background);">
+
+    @* Strip 1: thin metadata bar *@
+    <div class="border-b border-dashed" style="border-color: var(--border);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-between py-1.5">
+            <span class="text-[10px] uppercase tracking-[0.2em] font-medium" style="color: var(--muted-foreground);">
+                @DateTime.Now.ToString("dddd, MMMM d, yyyy")
+            </span>
+            <div class="flex items-center gap-3">
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <a href="/admin/dashboard" class="text-[10px] uppercase tracking-widest font-semibold hover:opacity-70 transition-opacity"
+                       style="color: var(--primary);">Dashboard &rarr;</a>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Strip 2: large site name centered *@
+    <div class="py-5 md:py-7 border-b border-dashed" style="border-color: var(--border);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-center">
+            <a href="/" class="flex flex-col items-center gap-1 hover:opacity-80 transition-opacity">
+                <img src="@logoUrl" alt="@Model.SiteName" class="h-10 md:h-16 object-contain" />
+                @if (!string.IsNullOrEmpty(Model.Tagline))
+                {
+                    <span class="text-[10px] uppercase tracking-[0.25em] mt-1" style="color: var(--muted-foreground);">@Model.Tagline</span>
+                }
+            </a>
+        </div>
+    </div>
+
+    @* Strip 3: slim nav + icon bar *@
+    <div class="border-b border-dashed sticky top-0 z-50" style="background: var(--background); border-color: var(--border);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-between" style="height: 2.75rem;">
+            @* Left: page links *@
+            <div class="flex items-center gap-0 text-xs uppercase tracking-widest hidden md:flex">
+                <a href="/" class="px-3 py-1 hover:opacity-60 transition-opacity border-r border-dashed" style="border-color: var(--border);">Home</a>
+                @foreach (var navPage in sortedPages.Take(4))
+                {
+                    <a href="/@navPage.Slug" class="px-3 py-1 hover:opacity-60 transition-opacity border-r border-dashed" style="border-color: var(--border);">@navPage.Title</a>
+                }
+            </div>
+
+            @* Mobile: hamburger *@
+            <button @@click="mobileOpen = !mobileOpen" class="md:hidden flex items-center gap-1.5 text-xs uppercase tracking-widest hover:opacity-60">
+                <i class="bi bi-list text-base"></i> Menu
+            </button>
+
+            @* Right: icons *@
+            <div class="flex items-center gap-0 ml-auto">
+                @* Pages dropdown (all pages, mobile supplement) *@
+                <div class="relative" x-data="{ pagesOpen: false }">
+                    <button @@click="pagesOpen = !pagesOpen" @@click.outside="pagesOpen = false"
+                            class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity border-l border-dashed"
+                            style="border-color: var(--border);" title="All Pages">
+                        <i class="bi bi-file-text text-sm"></i>
+                    </button>
+                    <div x-show="pagesOpen"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         style="display:none; background: var(--background); border-color: var(--border);"
+                         class="absolute right-0 top-full min-w-44 border border-dashed z-50">
+                        <a href="/" class="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider hover:opacity-60 border-b border-dashed" style="border-color: var(--border);">
+                            <i class="bi bi-house text-xs" style="color: var(--muted-foreground);"></i> Home
+                        </a>
+                        @foreach (var p in sortedPages)
+                        {
+                            <a href="/@p.Slug" class="flex items-center gap-2 px-4 py-2 text-xs uppercase tracking-wider hover:opacity-60 border-b border-dashed" style="border-color: var(--border);">
+                                <i class="bi bi-dash text-xs" style="color: var(--muted-foreground);"></i> @p.Title
+                            </a>
+                        }
+                    </div>
+                </div>
+                <button @@click="searchOpen = !searchOpen"
+                        class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity border-l border-dashed"
+                        style="border-color: var(--border);" title="Search">
+                    <i class="bi bi-search text-sm"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* Mobile menu slide-down *@
+    <div x-show="mobileOpen" x-transition class="md:hidden border-b border-dashed" style="background: var(--background); border-color: var(--border);">
+        <div class="px-4 py-3 flex flex-col gap-0">
+            <a href="/" class="py-2.5 text-xs uppercase tracking-widest border-b border-dashed hover:opacity-60" style="border-color: var(--border);">Home</a>
+            @foreach (var p in sortedPages)
+            {
+                <a href="/@p.Slug" class="py-2.5 text-xs uppercase tracking-widest border-b border-dashed hover:opacity-60" style="border-color: var(--border);">@p.Title</a>
+            }
+        </div>
+    </div>
+
+    @* Search overlay *@
+    <div x-show="searchOpen"
+         x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[60] flex items-start justify-center pt-20" style="background: rgba(0,0,0,0.5);">
+        <div @@click.away="searchOpen = false"
+             class="w-full max-w-lg mx-4 border border-dashed" style="background: var(--background); border-color: var(--border);">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="text-xs uppercase tracking-widest font-semibold" style="color: var(--muted-foreground);">Search</span>
+                    <button @@click="searchOpen = false" class="text-xl hover:opacity-60">&times;</button>
+                </div>
+                <form action="/" method="get" class="flex">
+                    <input type="text" name="search" placeholder="Search posts…"
+                           class="flex-1 h-10 px-4 border-b bg-transparent text-sm outline-none"
+                           style="border-color: var(--foreground); color: var(--foreground);" />
+                    <button type="submit" class="w-10 h-10 flex items-center justify-center" style="background: var(--foreground); color: var(--background);">
+                        <i class="bi bi-search text-sm"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</header>

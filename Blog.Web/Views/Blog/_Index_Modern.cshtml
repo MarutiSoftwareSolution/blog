@@ -1,0 +1,213 @@
+@using Blog.Core.Interfaces
+@model PagedResult<Blog.Core.Domain.Post>
+@{
+    var searchTerm = ViewBag.SearchTerm as string;
+    var selectedCategories = ViewBag.SelectedCategories as List<string> ?? new List<string>();
+    var selectedTags = ViewBag.SelectedTags as List<string> ?? new List<string>();
+
+    var isFirstPage = Model.Page == 1 && !selectedCategories.Any() && !selectedTags.Any() && string.IsNullOrEmpty(searchTerm);
+    var heroPost = (isFirstPage && Model.Items.Count >= 4) ? Model.Items.FirstOrDefault() : null;
+    var restPosts = heroPost != null ? Model.Items.Skip(1).ToList() : Model.Items.ToList();
+
+    string GetToggleUrl(string type, string slug)
+    {
+        var currentCats = new List<string>(selectedCategories);
+        var currentTags = new List<string>(selectedTags);
+        if (type == "category") { if (currentCats.Contains(slug)) currentCats.Remove(slug); else currentCats.Add(slug); }
+        else if (type == "tags") { if (currentTags.Contains(slug)) currentTags.Remove(slug); else currentTags.Add(slug); }
+        var q = new List<string>();
+        if (!string.IsNullOrEmpty(searchTerm)) q.Add("search=" + Uri.EscapeDataString(searchTerm));
+        if (currentCats.Any()) q.Add("category=" + string.Join(",", currentCats));
+        if (currentTags.Any()) q.Add("tags=" + string.Join(",", currentTags));
+        return q.Any() ? "?" + string.Join("&", q) : "/";
+    }
+}
+
+<div class="min-h-screen">
+
+    @* ── HERO ──────────────────────────────────────────────────────── *@
+    @if (heroPost != null)
+    {
+        <a href="/@heroPost.Slug" class="group block relative overflow-hidden" style="height: 90vh; max-height: 700px;">
+            @if (!string.IsNullOrEmpty(heroPost.FeatureImage))
+            {
+                <img src="@heroPost.FeatureImage" alt="@heroPost.Title"
+                     class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000" />
+            }
+            else
+            {
+                <div class="absolute inset-0" style="background: var(--primary);"></div>
+            }
+            <div class="absolute inset-0 bg-black/40"></div>
+
+            <div class="absolute bottom-0 left-0 right-0 p-8 md:p-16 max-w-5xl mx-auto">
+                @if (heroPost.Categories.Any())
+                {
+                    <span class="inline-block px-4 py-2 text-xs font-bold uppercase tracking-widest mb-5 border-l-4"
+                          style="background: var(--card); color: var(--foreground); border-color: var(--primary);">
+                        @heroPost.Categories.First().Name
+                    </span>
+                }
+                <h1 class="text-3xl md:text-6xl font-black text-white leading-tight mb-4" style="text-shadow: 0 2px 20px rgba(0,0,0,0.5);">
+                    @heroPost.Title
+                </h1>
+                @if (!string.IsNullOrEmpty(heroPost.MetaDescription))
+                {
+                    <p class="text-white/70 text-lg mb-6 max-w-2xl line-clamp-2">@heroPost.MetaDescription</p>
+                }
+                <div class="flex items-center gap-4 text-sm text-white/60">
+                    <span class="flex items-center gap-2">
+                        <i class="bi bi-person-circle"></i>
+                        @(string.IsNullOrEmpty(heroPost.AuthorName) ? "Anonymous" : heroPost.AuthorName)
+                    </span>
+                    <span>•</span>
+                    <span><i class="bi bi-calendar3 me-1"></i>@heroPost.PublishedAt?.ToString("MMMM d, yyyy")</span>
+                </div>
+            </div>
+
+            <div class="absolute top-6 right-6 px-6 py-3 text-sm font-bold uppercase tracking-widest transition-all duration-300 hover:bg-white hover:text-black border-2 border-white text-white">
+                Read Article
+            </div>
+        </a>
+    }
+
+    @* ── FILTER BOX ─────────────────────────────────────────────── *@
+    @if ((ViewBag.Categories != null && ((IEnumerable<Blog.Core.Domain.Category>)ViewBag.Categories).Any()) || 
+         (ViewBag.Tags != null && ((IEnumerable<Blog.Core.Domain.Tag>)ViewBag.Tags).Any()))
+    {
+        <div class="container xl:max-w-6xl mx-auto px-4 py-8">
+            <div class="border rounded-none shadow-sm flex flex-col gap-0" style="background: var(--card); border-color: var(--border);">
+                <div class="flex justify-between items-center p-5 border-b" style="border-color: var(--border); background: var(--muted)/30;">
+                    <h3 class="text-xs uppercase tracking-widest font-black" style="color: var(--foreground);">Filter Stories</h3>
+                    @if (selectedCategories.Any() || selectedTags.Any()) {
+                        <a href="/" class="text-[10px] font-bold uppercase tracking-wider underline hover:opacity-50 text-red-500">Clear All</a>
+                    }
+                </div>
+                
+                <div class="flex flex-col md:flex-row gap-8 p-6">
+                    @if (ViewBag.Categories != null && ((IEnumerable<Blog.Core.Domain.Category>)ViewBag.Categories).Any())
+                    {
+                        <div class="flex-1">
+                            <p class="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style="color: var(--muted-foreground);">Categories</p>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="/" class="px-5 py-2 text-xs font-bold uppercase tracking-wider border transition-all hover:opacity-70" 
+                                   style="background: @((!selectedCategories.Any() && !selectedTags.Any()) ? "var(--primary)" : "transparent"); color: @((!selectedCategories.Any() && !selectedTags.Any()) ? "var(--primary-foreground)" : "var(--muted-foreground)"); border: 1px solid @((!selectedCategories.Any() && !selectedTags.Any()) ? "var(--primary)" : "var(--border)");">All</a>
+                                @foreach (var cat in (IEnumerable<Blog.Core.Domain.Category>)ViewBag.Categories)
+                                {
+                                    bool isOn = selectedCategories.Contains(cat.Slug);
+                                    <a href="@GetToggleUrl("category", cat.Slug)" class="px-5 py-2 text-xs font-bold uppercase tracking-wider border transition-all hover:opacity-70"
+                                       style="background: @(isOn ? "var(--primary)" : "transparent"); color: @(isOn ? "var(--primary-foreground)" : "var(--muted-foreground)"); border: 1px solid @(isOn ? "var(--primary)" : "var(--border)");">
+                                        @cat.Name
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    @if (ViewBag.Tags != null && ((IEnumerable<Blog.Core.Domain.Tag>)ViewBag.Tags).Any())
+                    {
+                        <div class="flex-1">
+                            <p class="text-[10px] uppercase tracking-[0.2em] font-bold mb-4" style="color: var(--muted-foreground);">Topics</p>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach (var tag in (IEnumerable<Blog.Core.Domain.Tag>)ViewBag.Tags)
+                                {
+                                    bool isOn = selectedTags.Contains(tag.Slug);
+                                    <a href="@GetToggleUrl("tags", tag.Slug)" class="px-4 py-2 text-[10px] font-bold uppercase tracking-wider border transition-all hover:opacity-70"
+                                       style="background: @(isOn ? "var(--foreground)" : "transparent"); color: @(isOn ? "var(--background)" : "var(--muted-foreground)"); border: 1px solid @(isOn ? "var(--foreground)" : "var(--border)");">
+                                        #@tag.Name
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    @* ── POST GRID ────────────────────────────────────────────────── *@
+    <div class="container xl:max-w-6xl mx-auto px-4 py-10">
+        @if (!string.IsNullOrEmpty(searchTerm))
+        {
+            <div class="mb-8 flex items-center gap-3">
+                <span style="color: var(--muted-foreground);">Results for:</span>
+                <span class="font-black text-2xl">"@searchTerm"</span>
+                <a href="/" class="text-xs px-3 py-1 rounded-full border hover:opacity-70" style="border-color: var(--border);">✕ Clear</a>
+            </div>
+        }
+
+        @if (!Model.Items.Any())
+        {
+            <div class="py-32 flex flex-col items-center gap-4 text-center">
+                <div class="w-20 h-20 flex items-center justify-center text-4xl border-2"
+                     style="border-color: var(--border); color: var(--muted-foreground);">
+                    <i class="bi bi-journal-x"></i>
+                </div>
+                <h2 class="text-3xl font-black mt-4 uppercase">Nothing here yet</h2>
+                <p style="color: var(--muted-foreground);">Start writing your first story.</p>
+                <a href="/" class="mt-4 px-8 py-3 font-bold text-sm uppercase tracking-wider border-2 hover:bg-transparent transition-all"
+                   style="background: var(--primary); color: var(--primary-foreground); border-color: var(--primary);">Go Home</a>
+            </div>
+        }
+        else
+        {
+            @* Pinterest-style masonry: first big, rest 3-col *@
+            @if (restPosts.Count > 0)
+            {
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    @* First card spans 2 cols *@
+                    <div class="md:col-span-2 lg:col-span-2">
+                        <partial name="_PostCard_Modern" model="@restPosts[0]" />
+                    </div>
+                    @if (restPosts.Count > 1)
+                    {
+                        <div>
+                            <partial name="_PostCard_Modern" model="@restPosts[1]" />
+                        </div>
+                    }
+                </div>
+                @if (restPosts.Count > 2)
+                {
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        @for (int i = 2; i < restPosts.Count; i++)
+                        {
+                            <partial name="_PostCard_Modern" model="@restPosts[i]" />
+                        }
+                    </div>
+                }
+            }
+        }
+
+        @* Pagination *@
+        @if (Model.TotalPages > 1)
+        {
+            var qParts = new List<string>();
+            if (!string.IsNullOrEmpty(searchTerm)) qParts.Add("search=" + Uri.EscapeDataString(searchTerm));
+            if (selectedCategories.Any()) qParts.Add("category=" + string.Join(",", selectedCategories));
+            if (selectedTags.Any()) qParts.Add("tags=" + string.Join(",", selectedTags));
+            var baseQuery = qParts.Any() ? "&" + string.Join("&", qParts) : "";
+
+            <div class="flex items-center justify-center gap-3 mt-14">
+                @if (Model.Page > 1)
+                {
+                    <a href="?page=@(Model.Page - 1)@baseQuery"
+                       class="px-6 py-3 text-sm font-bold uppercase tracking-widest border border-r-0 hover:bg-muted transition-colors"
+                       style="border-color: var(--border); color: var(--foreground);">
+                        Previous
+                    </a>
+                }
+                <span class="px-6 py-3 text-sm font-bold border" style="background: var(--muted); border-color: var(--border); color: var(--muted-foreground);">
+                    @Model.Page / @Model.TotalPages
+                </span>
+                @if (Model.Page < Model.TotalPages)
+                {
+                    <a href="?page=@(Model.Page + 1)@baseQuery"
+                       class="px-6 py-3 text-sm font-bold uppercase tracking-widest border border-l-0 hover:bg-muted transition-colors"
+                       style="border-color: var(--border); color: var(--foreground);">
+                        Next
+                    </a>
+                }
+            </div>
+        }
+    </div>
+</div>

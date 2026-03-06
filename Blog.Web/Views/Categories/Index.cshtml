@@ -1,0 +1,90 @@
+@model IEnumerable<Blog.Core.Domain.Category>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Categories";
+}
+
+<div class="flex flex-col gap-6">
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- List -->
+        <div class="md:col-span-2 space-y-4">
+            <div class="bg-card rounded-lg border border-border overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="bg-muted text-muted-foreground border-b border-border">
+                            <th class="px-4 py-3 font-medium">Name</th>
+                            <th class="px-4 py-3 font-medium">Slug</th>
+                            <th class="px-4 py-3 font-medium w-[100px]">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        @if (!Model.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-muted-foreground">
+                                    No categories found.
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var category in Model)
+                        {
+                            <tr class="group hover:bg-muted/50 transition-colors">
+                                <td class="px-4 py-3 font-medium">@category.Name</td>
+                                <td class="px-4 py-3 text-muted-foreground">@category.Slug</td>
+                                <td class="px-4 py-3">
+                                    <form method="post" action="/admin/categories/delete/@category.Id" onsubmit="return confirm('Ensure to delete?');">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Create Form -->
+        <div class="md:col-span-1">
+            <div class="bg-card rounded-lg border border-border p-4 sticky top-6">
+                <h2 class="font-semibold mb-4">Add New Category</h2>
+                <form method="post" action="/admin/categories/create" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Name</label>
+                        <input type="text" name="name" id="catName" required class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. Technology" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Slug</label>
+                        <input type="text" name="slug" id="catSlug" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" placeholder="e.g. technology (optional)" />
+                    </div>
+                    <button type="submit" class="w-full px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium shadow-sm transition-colors">
+                        Add Category
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('catName').addEventListener('input', function() {
+        const slugInput = document.getElementById('catSlug');
+        slugInput.value = this.value.toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/[\s_]+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    });
+
+    document.getElementById('catSlug').addEventListener('input', function() {
+        this.value = this.value.toLowerCase()
+            .replace(/[^a-z0-9\s-]/g, '')
+            .replace(/[\s_]+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    });
+</script>

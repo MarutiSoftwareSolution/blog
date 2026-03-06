@@ -1,0 +1,740 @@
+<!-- ═══════════════════════════════════════════════════════════════════
+     SLASH COMMAND MENU  — focus stays in Quill at all times
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="slash-menu" style="display:none; position:fixed; z-index:9999;" role="listbox">
+    <div class="slash-menu-header">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+             style="opacity:.45;flex-shrink:0">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <span id="slash-menu-query" class="slash-menu-query-echo">Type to filter…</span>
+    </div>
+    <div id="slash-menu-list" class="slash-menu-list"></div>
+    <div class="slash-menu-footer">
+        <span><kbd>↑↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> Select</span>
+        <span><kbd>Esc</kbd> Dismiss</span>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     SLASH INPUT DIALOG  — replaces browser prompt() for inputs
+     ═══════════════════════════════════════════════════════════════════ -->
+<div id="slash-input-dialog" style="display:none; position:fixed; z-index:10000;">
+    <div class="sid-header">
+        <span class="sid-title" id="sid-title">Insert</span>
+        <button class="sid-close" id="sid-close" type="button">&#x2715;</button>
+    </div>
+    <div class="sid-body" id="sid-body"></div>
+    <div class="sid-footer">
+        <button class="sid-btn sid-cancel" id="sid-cancel" type="button">Cancel</button>
+        <button class="sid-btn sid-confirm" id="sid-confirm" type="button">Insert</button>
+    </div>
+</div>
+
+<style>
+/* ── Slash Menu Container ────────────────────────────────────────── */
+#slash-menu {
+    background: var(--card,#fff);
+    border: 1px solid var(--border,#e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.15), 0 2px 8px rgba(0,0,0,.07);
+    width: 300px;
+    max-height: 380px;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    pointer-events: auto;
+}
+#slash-menu.slash-animate-in {
+    animation: slashIn .14s cubic-bezier(.22,1,.36,1) both;
+}
+@@keyframes slashIn {
+    from { opacity:0; transform:scale(.95) translateY(-4px); }
+    to   { opacity:1; transform:scale(1)   translateY(0);    }
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+.slash-menu-header {
+    display:flex; align-items:center; gap:7px;
+    padding:9px 12px 7px;
+    border-bottom:1px solid var(--border,#e2e8f0);
+    flex-shrink:0;
+}
+.slash-menu-query-echo {
+    font-size:13px; color:var(--muted-foreground,#94a3b8);
+    font-style:italic; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;
+}
+.slash-menu-query-echo.has-text { color:var(--foreground,#1a1a2e); font-style:normal; font-weight:500; }
+
+/* ── List ───────────────────────────────────────────────────────── */
+.slash-menu-list { overflow-y:auto; flex:1; padding:5px; }
+.slash-menu-list::-webkit-scrollbar { width:4px; }
+.slash-menu-list::-webkit-scrollbar-track { background:transparent; }
+.slash-menu-list::-webkit-scrollbar-thumb { background:var(--border,#e2e8f0); border-radius:9999px; }
+
+/* ── Category ───────────────────────────────────────────────────── */
+.slash-menu-category {
+    font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--muted-foreground,#94a3b8); padding:8px 8px 3px;
+}
+
+/* ── Item ───────────────────────────────────────────────────────── */
+.slash-menu-item {
+    display:flex; align-items:center; gap:9px; padding:6px 8px; border-radius:6px;
+    cursor:pointer; transition:background .1s; user-select:none;
+}
+.slash-menu-item:hover { background:var(--accent,#f1f5f9); }
+.slash-menu-item.active { background:var(--primary,#6366f1); color:#fff; }
+
+/* ── Icon ───────────────────────────────────────────────────────── */
+.slash-item-icon {
+    width:30px; height:30px; border-radius:6px;
+    border:1px solid var(--border,#e2e8f0); background:var(--background,#f8fafc);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:700; font-family:Georgia,serif; flex-shrink:0;
+    transition:background .1s, border-color .1s;
+}
+.slash-menu-item.active .slash-item-icon { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.3); }
+
+/* ── Text ───────────────────────────────────────────────────────── */
+.slash-item-text { flex:1; min-width:0; }
+.slash-item-label { font-size:13px; font-weight:500; color:var(--foreground,#1a1a2e); line-height:1.3; }
+.slash-menu-item.active .slash-item-label { color:#fff; }
+.slash-item-desc  { font-size:11px; color:var(--muted-foreground,#94a3b8); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.slash-menu-item.active .slash-item-desc { color:rgba(255,255,255,.75); }
+
+/* ── Badge ──────────────────────────────────────────────────────── */
+.slash-item-badge {
+    font-size:10px; font-weight:600; padding:2px 5px; border-radius:4px;
+    background:var(--muted,#f1f5f9); color:var(--muted-foreground,#64748b);
+    flex-shrink:0; font-family:monospace;
+}
+.slash-menu-item.active .slash-item-badge { background:rgba(255,255,255,.9); color:var(--foreground,#1a1a2e); }
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+.slash-menu-footer {
+    display:flex; gap:10px; padding:5px 12px;
+    border-top:1px solid var(--border,#e2e8f0);
+    font-size:10px; color:var(--muted-foreground,#94a3b8); flex-shrink:0;
+}
+.slash-menu-footer kbd {
+    display:inline-flex; align-items:center; padding:1px 4px;
+    border:1px solid var(--border,#dde1e6); border-radius:3px;
+    font-size:10px; font-family:monospace;
+    background:var(--muted,#f8fafc); color:var(--foreground,#374151);
+}
+
+/* ── Empty ──────────────────────────────────────────────────────── */
+.slash-menu-empty { padding:18px; text-align:center; font-size:13px; color:var(--muted-foreground,#94a3b8); }
+
+/* ────────────────────────────────────────────────────────────────── */
+/* SLASH INPUT DIALOG                                                  */
+/* ────────────────────────────────────────────────────────────────── */
+#slash-input-dialog {
+    background:var(--card,#fff);
+    border:1px solid var(--border,#e2e8f0);
+    border-radius:10px;
+    box-shadow:0 12px 40px rgba(0,0,0,.18), 0 2px 10px rgba(0,0,0,.08);
+    width:320px;
+    overflow:hidden;
+    animation:slashIn .14s cubic-bezier(.22,1,.36,1) both;
+}
+.sid-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px 10px;
+    border-bottom:1px solid var(--border,#e2e8f0);
+}
+.sid-title { font-size:14px; font-weight:600; color:var(--foreground,#1a1a2e); }
+.sid-close {
+    border:none; background:none; cursor:pointer; padding:2px 5px;
+    color:var(--muted-foreground,#94a3b8); font-size:16px; line-height:1;
+    border-radius:4px; transition:background .1s, color .1s;
+}
+.sid-close:hover { background:var(--accent,#f1f5f9); color:var(--foreground,#1a1a2e); }
+
+.sid-body { padding:14px; display:flex; flex-direction:column; gap:10px; }
+.sid-field { display:flex; flex-direction:column; gap:4px; }
+.sid-field label { font-size:12px; font-weight:500; color:var(--foreground,#1a1a2e); }
+.sid-field input,
+.sid-field select {
+    width:100%; padding:8px 10px; box-sizing:border-box;
+    border:1px solid var(--border,#e2e8f0); border-radius:6px;
+    background-color:var(--background,#f8fafc); color:var(--foreground,#1a1a2e);
+    font-size:13px; outline:none; transition:border-color .15s, box-shadow .15s;
+}
+.sid-field select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 30px;
+}
+.sid-field input:focus,
+.sid-field select:focus {
+    border-color:var(--primary,#6366f1);
+    box-shadow:0 0 0 2px rgba(99,102,241,.18);
+}
+.sid-field input::placeholder { color:var(--muted-foreground,#94a3b8); }
+
+.sid-footer { display:flex; gap:8px; padding:10px 14px; border-top:1px solid var(--border,#e2e8f0); justify-content:flex-end; }
+.sid-btn {
+    padding:7px 16px; border-radius:6px; font-size:13px; font-weight:500;
+    cursor:pointer; border:1px solid transparent; transition:background .1s, border-color .1s;
+}
+.sid-cancel {
+    background:var(--background,#f8fafc); border-color:var(--border,#e2e8f0);
+    color:var(--foreground,#1a1a2e);
+}
+.sid-cancel:hover { background:var(--accent,#f1f5f9); }
+.sid-confirm {
+    background:var(--primary,#6366f1); color:#fff;
+}
+.sid-confirm:hover { filter:brightness(.92); }
+</style>
+
+<script>
+(function () {
+
+// ══════════════════════════════════════════════════════════════════════
+//  COMMANDS
+// ══════════════════════════════════════════════════════════════════════
+var COMMANDS = [
+    // ── Text ─────────────────────────────────────────────────────────
+    { category:'Text', label:'Paragraph',     desc:'Plain text paragraph',    icon:'¶',   badge:'/p',
+      keywords:['paragraph','text','plain','normal'],
+      action:function(q,r){ q.format('header',false); } },
+    { category:'Text', label:'Heading 1',     desc:'Large section heading',   icon:'H1',  badge:'/h1',
+      keywords:['heading','h1','title','large'],
+      action:function(q){ q.format('header',1); } },
+    { category:'Text', label:'Heading 2',     desc:'Medium section heading',  icon:'H2',  badge:'/h2',
+      keywords:['heading','h2','subtitle','medium'],
+      action:function(q){ q.format('header',2); } },
+    { category:'Text', label:'Heading 3',     desc:'Small section heading',   icon:'H3',  badge:'/h3',
+      keywords:['heading','h3','small'],
+      action:function(q){ q.format('header',3); } },
+    { category:'Text', label:'Blockquote',    desc:'Highlighted pull quote',  icon:'"',   badge:'/bq',
+      keywords:['quote','blockquote'],
+      action:function(q){ q.format('blockquote',true); } },
+    { category:'Text', label:'Bold',          desc:'Make text bold',          icon:'B',   badge:'/b',
+      keywords:['bold','strong'],
+      action:function(q){ q.format('bold',true); } },
+    { category:'Text', label:'Italic',        desc:'Make text italic',        icon:'I',   badge:'/i',
+      keywords:['italic','em'],
+      action:function(q){ q.format('italic',true); } },
+    { category:'Text', label:'Underline',     desc:'Underline text',          icon:'U',   badge:'/u',
+      keywords:['underline'],
+      action:function(q){ q.format('underline',true); } },
+    { category:'Text', label:'Strikethrough', desc:'Strike through text',     icon:'S̶',   badge:'/s',
+      keywords:['strike','strikethrough'],
+      action:function(q){ q.format('strike',true); } },
+
+    // ── Alignment ────────────────────────────────────────────────────
+    { category:'Alignment', label:'Align Left',   desc:'Left-align block',    icon:'⬛', badge:'/al',  keywords:['align','left'],    action:function(q){ q.format('align',false); } },
+    { category:'Alignment', label:'Align Center', desc:'Center-align block',  icon:'▣',  badge:'/ac',  keywords:['align','center'],  action:function(q){ q.format('align','center'); } },
+    { category:'Alignment', label:'Align Right',  desc:'Right-align block',   icon:'▤',  badge:'/ar',  keywords:['align','right'],   action:function(q){ q.format('align','right'); } },
+    { category:'Alignment', label:'Justify',      desc:'Justify block',       icon:'☰',  badge:'/aj',  keywords:['align','justify'], action:function(q){ q.format('align','justify'); } },
+
+    // ── Lists ─────────────────────────────────────────────────────────
+    { category:'Lists', label:'Bullet List',   desc:'Unordered list',         icon:'•',  badge:'/ul',  keywords:['list','bullet','unordered'],  action:function(q){ q.format('list','bullet'); } },
+    { category:'Lists', label:'Numbered List', desc:'Ordered numbered list',  icon:'1.', badge:'/ol',  keywords:['list','numbered','ordered'],  action:function(q){ q.format('list','ordered'); } },
+    { category:'Lists', label:'Indent (+)',    desc:'Increase indent',         icon:'→',  badge:'/in',  keywords:['indent','increase'],          action:function(q){ q.format('indent','+1'); } },
+    { category:'Lists', label:'Indent (−)',    desc:'Decrease indent',         icon:'←',  badge:'/de',  keywords:['dedent','decrease'],          action:function(q){ q.format('indent','-1'); } },
+
+    // ── Media ─────────────────────────────────────────────────────────
+    { category:'Media', label:'Image',      desc:'Upload or embed an image',  icon:'🖼', badge:'/img', keywords:['image','photo','picture','upload'],
+      action:function(q){
+          var tb = q.getModule('toolbar');
+          if (tb && tb.handlers && tb.handlers.image) tb.handlers.image.call({quill:q});
+      }},
+    { category:'Media', label:'Video Embed', desc:'Embed YouTube / Vimeo',   icon:'▶',  badge:'/vid', keywords:['video','youtube','vimeo','embed'],
+      inputDialog:{
+          title: 'Embed Video',
+          confirmText: 'Embed',
+          fields:[{ key:'url', label:'Video URL', placeholder:'https://www.youtube.com/watch?v=...' }]
+      },
+      action:function(q,r,vals){
+          var url = vals.url.trim();
+          if (!url) return;
+          url = url.replace('watch?v=','embed/').replace('youtu.be/','www.youtube.com/embed/').replace('vimeo.com/','player.vimeo.com/video/');
+          q.insertEmbed(r.index,'video',url,'user');
+          q.insertText(r.index+1,'\n','user');
+          q.setSelection(r.index+2,0,'user');
+      }},
+    { category:'Media', label:'Divider',    desc:'Insert a horizontal rule', icon:'—',  badge:'/hr',  keywords:['divider','rule','separator','hr'],
+      action:function(q,r){
+          q.insertEmbed(r.index,'divider',true,'user');
+          q.insertText(r.index+1,'\n','user');
+          q.setSelection(r.index+2,0,'user');
+      }},
+
+    // ── Code ──────────────────────────────────────────────────────────
+    { category:'Code', label:'Code Block', desc:'Multi-line code snippet',    icon:'{}', badge:'/code', keywords:['code','snippet','block','pre'],
+      action:function(q){ q.format('code-block',true); } },
+
+    // ── Inline ────────────────────────────────────────────────────────
+    { category:'Inline', label:'Insert Link', desc:'Add a hyperlink',        icon:'🔗', badge:'/link', keywords:['link','url','href','anchor'],
+      inputDialog:{
+          title: 'Insert Link',
+          confirmText: 'Insert',
+          fields:[{ key:'url', label:'URL', placeholder:'https://example.com' }]
+      },
+      action:function(q,r,vals){
+          var url = vals.url.trim();
+          if (url) q.format('link',url);
+      }},
+
+    // ── Button ────────────────────────────────────────────────────────
+    { category:'Button', label:'Button Block', desc:'Styled call-to-action button', icon:'⬡', badge:'/btn', keywords:['button','cta','link','anchor','action'],
+      inputDialog:{
+          title: 'Insert Button',
+          confirmText: 'Insert',
+          fields:[
+              { key:'text',  label:'Button Text',  placeholder:'Click here' },
+              { key:'url',   label:'Button URL',   placeholder:'https://example.com' },
+              { key:'align', label:'Alignment',    type:'select', default:'left',
+                options:[
+                    { value:'left',   label:'⬛ Left' },
+                    { value:'center', label:'▣ Center' },
+                    { value:'right',  label:'▤ Right' },
+                    { value:'full',   label:'⬜ Full Width' },
+                ]
+              }
+          ]
+      },
+      action:function(q,r,vals){
+          var text  = vals.text.trim()  || 'Click here';
+          var url   = vals.url.trim()   || '#';
+          var align = vals.align        || 'left';
+          q.insertEmbed(r.index,'button-block',{text:text,url:url,align:align},'user');
+          q.insertText(r.index+1,'\n','user');
+          q.setSelection(r.index+2,0,'user');
+      }},
+];
+
+// ══════════════════════════════════════════════════════════════════════
+//  SLASH INPUT DIALOG
+// ══════════════════════════════════════════════════════════════════════
+function SlashInputDialog() {
+    this.el      = document.getElementById('slash-input-dialog');
+    this.titleEl = document.getElementById('sid-title');
+    this.bodyEl  = document.getElementById('sid-body');
+    this.confirmEl = document.getElementById('sid-confirm');
+    this.cancelEl  = document.getElementById('sid-cancel');
+    this.closeEl   = document.getElementById('sid-close');
+    this._onConfirm = null;
+    this._onCancel  = null;
+    this._bindEvents();
+}
+
+SlashInputDialog.prototype._bindEvents = function() {
+    var self = this;
+    this.confirmEl.addEventListener('mousedown', function(e){ e.preventDefault(); self._submit(); });
+    this.cancelEl.addEventListener('mousedown',  function(e){ e.preventDefault(); self.hide(true); });
+    this.closeEl.addEventListener('mousedown',   function(e){ e.preventDefault(); self.hide(true); });
+    // Enter key inside inputs
+    this.el.addEventListener('keydown', function(e){
+        if (e.key === 'Enter')  { e.preventDefault(); self._submit(); }
+        if (e.key === 'Escape') { e.preventDefault(); self.hide(true); }
+    });
+};
+
+SlashInputDialog.prototype.show = function(config, position, onConfirm, onCancel) {
+    this._onConfirm = onConfirm;
+    this._onCancel  = onCancel;
+    this.titleEl.textContent   = config.title      || 'Insert';
+    this.confirmEl.textContent = config.confirmText || 'Insert';
+
+    this.bodyEl.innerHTML = '';
+    (config.fields || []).forEach(function(f) {
+        var wrap = document.createElement('div');
+        wrap.className = 'sid-field';
+        var lbl  = document.createElement('label');
+        lbl.textContent = f.label || f.key;
+        wrap.appendChild(lbl);
+
+        if (f.type === 'select') {
+            // ── dropdown ────────────────────────────────────────────
+            var sel = document.createElement('select');
+            sel.setAttribute('data-key', f.key);
+            (f.options || []).forEach(function(opt) {
+                var o = document.createElement('option');
+                o.value = opt.value;
+                o.textContent = opt.label;
+                if (f.default && opt.value === f.default) o.selected = true;
+                sel.appendChild(o);
+            });
+            wrap.appendChild(sel);
+        } else {
+            // ── text / url input ────────────────────────────────────
+            var inp = document.createElement('input');
+            inp.type = f.type || 'text';
+            inp.setAttribute('data-key', f.key);
+            inp.placeholder = f.placeholder || '';
+            inp.autocomplete = 'off';
+            wrap.appendChild(inp);
+        }
+
+        this.bodyEl.appendChild(wrap);
+    }, this);
+
+    var menuW = 320;
+    var left  = position.left;
+    var top   = position.top;
+    if (left + menuW > window.innerWidth  - 8) left = window.innerWidth  - menuW - 8;
+    if (left < 8) left = 8;
+    this.el.style.top  = top  + 'px';
+    this.el.style.left = left + 'px';
+    this.el.style.display = 'block';
+
+    var first = this.el.querySelector('input, select');
+    if (first) setTimeout(function(){ first.focus(); }, 50);
+};
+
+SlashInputDialog.prototype.hide = function(cancel) {
+    this.el.style.display = 'none';
+    if (cancel && this._onCancel) this._onCancel();
+    this._onConfirm = null;
+    this._onCancel  = null;
+};
+
+SlashInputDialog.prototype._submit = function() {
+    var values = {};
+    this.el.querySelectorAll('input[data-key], select[data-key]').forEach(function(el){
+        values[el.getAttribute('data-key')] = el.value;
+    });
+    var cb = this._onConfirm;
+    this.hide(false);
+    if (cb) cb(values);
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  SLASH MENU
+// ══════════════════════════════════════════════════════════════════════
+function SlashMenu(quill) {
+    this.quill    = quill;
+    this.menu     = document.getElementById('slash-menu');
+    this.queryEl  = document.getElementById('slash-menu-query');
+    this.listEl   = document.getElementById('slash-menu-list');
+    this.dialog   = new SlashInputDialog();
+
+    this.isOpen   = false;
+    this.activeIdx = 0;
+    this.slashIdx  = -1;
+    this.query     = '';
+    this.filtered  = [];
+    this._menuPos  = { top:0, left:0 };
+
+    this._bindQuillEvents();
+    this._bindKeyboardNav();
+    this._bindMouseClick();
+}
+
+// ── Quill events ──────────────────────────────────────────────────────
+SlashMenu.prototype._bindQuillEvents = function() {
+    var self = this;
+    this.quill.on('text-change', function(delta, old, source) {
+        if (source !== 'user') return;
+        if (self.isOpen) { self._updateQuery(); }
+        else             { self._checkTrigger(); }
+    });
+    this.quill.on('selection-change', function(range) {
+        if (!self.isOpen) return;
+        if (range === null) {
+            setTimeout(function(){
+                if (!self.menu.matches(':hover') && self.dialog.el.style.display === 'none')
+                    self.close(true);
+            }, 150);
+            return;
+        }
+        if (range.index < self.slashIdx) self.close(false);
+    });
+};
+
+// ── Detect "/" trigger ─────────────────────────────────────────────────
+SlashMenu.prototype._checkTrigger = function() {
+    var range = this.quill.getSelection();
+    if (!range || range.index === 0) return;
+
+    // The char just inserted is always at range.index - 1
+    var lastChar = this.quill.getText(range.index - 1, 1);
+    if (lastChar !== '/') return;
+
+    // Trigger after: start-of-doc, newline, or a space
+    // Does NOT trigger mid-word (e.g. "he/lo" is safe)
+    var prevChar = range.index >= 2 ? this.quill.getText(range.index - 2, 1) : '';
+    if (prevChar === '' || prevChar === '\n' || prevChar === ' ') {
+        this.slashIdx = range.index - 1;
+        this.query    = '';
+        this.open(range.index);
+    }
+};
+
+// ── Update query ───────────────────────────────────────────────────────
+SlashMenu.prototype._updateQuery = function() {
+    var range = this.quill.getSelection();
+    if (!range) return;
+    if (range.index <= this.slashIdx) { this.close(true); return; }
+    var raw = this.quill.getText(this.slashIdx, range.index - this.slashIdx);
+    this.query = raw.charAt(0) === '/' ? raw.slice(1) : raw;
+    if (this.query.indexOf('\n') !== -1) { this.close(true); return; }
+    this._filter(this.query);
+    this._updateHeader(this.query);
+};
+
+// ── Open ───────────────────────────────────────────────────────────────
+SlashMenu.prototype.open = function(cursorIdx) {
+    this.isOpen   = true;
+    this.activeIdx = 0;
+    this.query    = '';
+    this._filter('');
+    this._updateHeader('');
+    this._position(cursorIdx);
+    this.menu.style.display = 'flex';
+    this.menu.style.flexDirection = 'column';
+    this.menu.classList.remove('slash-animate-in');
+    void this.menu.offsetWidth;
+    this.menu.classList.add('slash-animate-in');
+};
+
+// ── Close ──────────────────────────────────────────────────────────────
+SlashMenu.prototype.close = function(deleteQuery) {
+    if (!this.isOpen) return;
+    this.isOpen = false;
+    this.menu.style.display = 'none';
+    this.menu.classList.remove('slash-animate-in');
+    if (deleteQuery && this.slashIdx >= 0) {
+        var range  = this.quill.getSelection();
+        var endIdx = range ? range.index : this.slashIdx + 1;
+        var len    = endIdx - this.slashIdx;
+        if (len > 0) {
+            this.quill.deleteText(this.slashIdx, len, 'user');
+            this.quill.setSelection(this.slashIdx, 0, 'user');
+        }
+    }
+    this.slashIdx = -1;
+    this.quill.focus();
+};
+
+// ── Position (prefers below, flips above when near viewport bottom) ──
+SlashMenu.prototype._position = function(idx) {
+    var menuW = 300;
+    var minH  = 180;   // min useful height before flipping direction
+    var maxH  = 380;
+
+    // Use Selection API for true viewport coords — avoids Quill getBounds()
+    // adding scrollTop which breaks calculations when editor is scrolled
+    var cursorBottom, cursorTop, left;
+
+    var sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        var r = sel.getRangeAt(0).getBoundingClientRect();
+        if (r && r.width + r.height > 0) {
+            cursorBottom = r.bottom;
+            cursorTop    = r.top;
+            left         = r.left;
+        }
+    }
+
+    // Fallback: Quill getBounds corrected for scroll
+    if (cursorBottom === undefined) {
+        var bounds    = this.quill.getBounds(idx);
+        var ctRect    = this.quill.container.getBoundingClientRect();
+        var scrollTop = this.quill.container.scrollTop || 0;
+        cursorBottom  = ctRect.top + bounds.bottom - scrollTop;
+        cursorTop     = ctRect.top + bounds.top    - scrollTop;
+        left          = ctRect.left + bounds.left;
+    }
+
+    // Clamp horizontal
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+    if (left < 8) left = 8;
+
+    var spaceBelow = window.innerHeight - cursorBottom - 8;
+    var spaceAbove = cursorTop - 8;
+
+    var top, capH;
+    if (spaceBelow >= minH) {
+        // Enough room below → show beneath cursor
+        top  = cursorBottom + 4;
+        capH = Math.min(maxH, spaceBelow - 4);
+    } else {
+        // Too little room below → flip above cursor
+        capH = Math.min(maxH, spaceAbove - 4);
+        top  = cursorTop - capH - 4;
+    }
+
+    capH = Math.max(120, capH);
+
+    this.menu.style.maxHeight = capH + 'px';
+    this.menu.style.top  = top  + 'px';
+    this.menu.style.left = left + 'px';
+
+    this._menuPos = { top: top, left: left };
+};
+
+// ── Filter ─────────────────────────────────────────────────────────────
+SlashMenu.prototype._filter = function(q) {
+    var lower = q.toLowerCase().trim();
+    this.filtered = lower
+        ? COMMANDS.filter(function(c){
+              return c.label.toLowerCase().includes(lower)
+                  || c.desc.toLowerCase().includes(lower)
+                  || c.badge.toLowerCase().includes(lower)
+                  || c.keywords.some(function(k){ return k.includes(lower); });
+          })
+        : COMMANDS.slice();
+    this.activeIdx = 0;
+    this._render();
+};
+
+SlashMenu.prototype._updateHeader = function(q) {
+    if (!this.queryEl) return;
+    if (q) { this.queryEl.textContent = '/'+q; this.queryEl.classList.add('has-text'); }
+    else   { this.queryEl.textContent = 'Type to filter…'; this.queryEl.classList.remove('has-text'); }
+};
+
+// ── Render ─────────────────────────────────────────────────────────────
+SlashMenu.prototype._render = function() {
+    var self = this;
+    this.listEl.innerHTML = '';
+    if (!this.filtered.length) {
+        this.listEl.innerHTML = '<div class="slash-menu-empty">No commands found</div>';
+        return;
+    }
+    var groups = {};
+    this.filtered.forEach(function(cmd, i){
+        if (!groups[cmd.category]) groups[cmd.category] = [];
+        groups[cmd.category].push({ cmd:cmd, idx:i });
+    });
+    Object.keys(groups).forEach(function(cat){
+        var lbl = document.createElement('div');
+        lbl.className = 'slash-menu-category';
+        lbl.textContent = cat;
+        self.listEl.appendChild(lbl);
+        groups[cat].forEach(function(entry){
+            var item = document.createElement('div');
+            item.className = 'slash-menu-item' + (entry.idx === self.activeIdx ? ' active' : '');
+            item.setAttribute('role','option');
+            item.dataset.idx = entry.idx;
+            item.innerHTML =
+                '<div class="slash-item-text">' +
+                    '<div class="slash-item-label">' + entry.cmd.label + '</div>' +
+                    '<div class="slash-item-desc">'  + entry.cmd.desc  + '</div>' +
+                '</div>' +
+                '<div class="slash-item-badge">' + entry.cmd.badge + '</div>';
+            item.addEventListener('mousedown', function(e){
+                e.preventDefault();
+                self._select(entry.idx);
+            });
+            self.listEl.appendChild(item);
+        });
+    });
+    this._scrollActive();
+};
+
+SlashMenu.prototype._scrollActive = function() {
+    var el = this.listEl.querySelector('.slash-menu-item.active');
+    if (el) el.scrollIntoView({ block:'nearest' });
+};
+
+// ── Select ─────────────────────────────────────────────────────────────
+SlashMenu.prototype._select = function(idx) {
+    var cmd = this.filtered[idx];
+    if (!cmd) return;
+
+    var self     = this;
+    var slashIdx = this.slashIdx;
+    var quill    = this.quill;
+    var menuPos  = { top: this._menuPos.top, left: this._menuPos.left };
+
+    // Remove '/' + query from editor
+    var range = quill.getSelection() || { index: slashIdx + 1 };
+    var len   = range.index - slashIdx;
+    if (len > 0) quill.deleteText(slashIdx, len, 'user');
+    quill.setSelection(slashIdx, 0, 'user');
+
+    // Hide menu (but don't close fully yet if dialog needed)
+    this.isOpen = false;
+    this.slashIdx = -1;
+    this.menu.style.display = 'none';
+
+    if (cmd.inputDialog) {
+        // Show input dialog, execute action on confirm
+        this.dialog.show(
+            cmd.inputDialog,
+            menuPos,
+            function(values) {
+                // After dialog confirmed, execute the block insert
+                setTimeout(function(){
+                    var r = quill.getSelection() || { index: slashIdx };
+                    cmd.action(quill, r, values);
+                    quill.focus();
+                }, 20);
+            },
+            function() {
+                // Cancelled — just refocus
+                quill.focus();
+            }
+        );
+    } else {
+        // No dialog — execute immediately
+        setTimeout(function(){
+            var r = quill.getSelection() || { index: slashIdx };
+            cmd.action(quill, r);
+            quill.focus();
+        }, 20);
+    }
+};
+
+// ── Keyboard nav (capture on quill.root) ──────────────────────────────
+SlashMenu.prototype._bindKeyboardNav = function() {
+    var self = this;
+    this.quill.root.addEventListener('keydown', function(e) {
+        if (!self.isOpen) return;
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                self.activeIdx = Math.min(self.activeIdx + 1, self.filtered.length - 1);
+                self._render();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                self.activeIdx = Math.max(self.activeIdx - 1, 0);
+                self._render();
+                break;
+            case 'Enter':
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                self._select(self.activeIdx);
+                break;
+            case 'Escape':
+                e.preventDefault();
+                self.close(true);
+                break;
+        }
+    }, true);
+};
+
+// ── Click outside ──────────────────────────────────────────────────────
+SlashMenu.prototype._bindMouseClick = function() {
+    var self = this;
+    document.addEventListener('mousedown', function(e) {
+        if (self.isOpen
+            && !self.menu.contains(e.target)
+            && e.target !== self.quill.root) {
+            self.close(true);
+        }
+    });
+};
+
+// ══════════════════════════════════════════════════════════════════════
+//  PUBLIC API
+// ══════════════════════════════════════════════════════════════════════
+window.initSlashMenu = function(quill) {
+    return new SlashMenu(quill);
+};
+
+})();
+</script>

@@ -1,0 +1,164 @@
+@using System.Security.Claims
+@model List<Blog.Core.Domain.User>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "User Management";
+    var allRoles = (List<Blog.Core.Domain.Role>)ViewBag.AllRoles;
+    var userRoles = (Dictionary<Guid, string>)ViewBag.UserRoles;
+    var currentUserIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    Guid.TryParse(currentUserIdStr, out var currentUserId);
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="max-w-5xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <p class="text-sm" style="color: var(--muted-foreground);">Manage user accounts and assign roles</p>
+        </div>
+        <a href="/admin/dashboard/seed" class="px-4 py-2 text-sm font-medium rounded-md hover:opacity-90 transition-opacity" style="background: var(--secondary); color: var(--secondary-foreground); border: 1px solid var(--border);">
+            🌱 Seed Data
+        </a>
+    </div>
+
+    @if (!allRoles.Any())
+    {
+        <div class="p-4 mb-6 rounded-lg border border-dashed" style="background: var(--muted); border-color: var(--border);">
+            <p class="text-sm font-medium" style="color: var(--destructive);">⚠️ RBAC roles not seeded yet. <a href="/admin/dashboard/seed" class="underline font-bold">Click here to seed</a> roles and permissions first.</p>
+        </div>
+    }
+
+    @if (isAdmin)
+    {
+    <!-- Invite Author Form -->
+    <div class="p-5 mb-6 border rounded-xl" style="background: var(--card); border-color: var(--border);">
+        <h3 class="text-base font-semibold mb-3">Invite Author</h3>
+        <p class="text-xs mb-4" style="color: var(--muted-foreground);">Create an account for a new author. They can log in with these credentials.</p>
+        <form method="post" action="/admin/users/invite" class="flex flex-wrap items-end gap-3">
+            @Html.AntiForgeryToken()
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-xs font-medium mb-1">Display Name *</label>
+                <input type="text" name="displayName" placeholder="Jane Doe" class="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1" style="background: var(--background); border-color: var(--border); color: var(--foreground);" required />
+            </div>
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-xs font-medium mb-1">Email *</label>
+                <input type="email" name="email" placeholder="jane@example.com" class="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1" style="background: var(--background); border-color: var(--border); color: var(--foreground);" required />
+            </div>
+            <div class="flex-1 min-w-[120px]">
+                <label class="block text-xs font-medium mb-1">Password *</label>
+                <input type="password" name="password" placeholder="Min 8 chars" minlength="8" class="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1" style="background: var(--background); border-color: var(--border); color: var(--foreground);" required />
+            </div>
+            <div class="min-w-[100px]">
+                <label class="block text-xs font-medium mb-1">Role</label>
+                <select name="roleName" class="w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-1" style="background: var(--background); border-color: var(--border); color: var(--foreground);">
+                    <option value="Author">Author</option>
+                    <option value="Editor">Editor</option>
+                    <option value="Contributor">Contributor</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+            <button type="submit" class="px-5 py-2 text-sm font-medium rounded-md hover:opacity-90 transition-opacity" style="background: var(--primary); color: var(--primary-foreground);">
+                + Add User
+            </button>
+        </form>
+    </div>
+    }
+
+    <div class="border rounded-xl overflow-hidden" style="border-color: var(--border); background: var(--card);">
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="background: var(--muted);">
+                    <th class="text-left px-6 py-3 font-semibold" style="color: var(--muted-foreground);">User</th>
+                    <th class="text-left px-6 py-3 font-semibold" style="color: var(--muted-foreground);">Email</th>
+                    <th class="text-left px-6 py-3 font-semibold" style="color: var(--muted-foreground);">Role</th>
+                    <th class="text-left px-6 py-3 font-semibold" style="color: var(--muted-foreground);">Status</th>
+                    <th class="text-right px-6 py-3 font-semibold" style="color: var(--muted-foreground);">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in Model)
+                {
+                    var currentRole = userRoles.ContainsKey(user.Id) ? userRoles[user.Id] : "None";
+                    <tr class="border-t" style="border-color: var(--border);">
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                                    <img src="@(!string.IsNullOrEmpty(user.AvatarUrl) ? user.AvatarUrl : $"https://api.dicebear.com/9.x/initials/webp?seed={System.Net.WebUtility.UrlEncode(user.DisplayName ?? "U")}&backgroundColor=e5e5e5")" alt="" class="w-full h-full object-cover" loading="lazy" />
+                                </div>
+                                <div>
+                                    <p class="font-medium">@(user.DisplayName ?? user.Username ?? "Unknown")</p>
+                                    <p class="text-xs" style="color: var(--muted-foreground);">@("@")@(user.Username)</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4" style="color: var(--muted-foreground);">@user.Email</td>
+                        <td class="px-6 py-4">
+                            @if (isAdmin && allRoles.Any())
+                            {
+                                <form method="post" action="/admin/users/update-role" class="flex items-center gap-2">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <select name="roleName" onchange="this.form.submit()" class="px-2 py-1 text-xs rounded-md border focus:outline-none focus:ring-1 focus:ring-primary" style="background: var(--background); border-color: var(--border); color: var(--foreground);">
+                                        @foreach (var role in allRoles)
+                                        {
+                                            <option value="@role.Name" selected="@(currentRole == role.Name)">@role.Name</option>
+                                        }
+                                    </select>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="px-2 py-1 text-xs rounded-full font-medium" style="background: var(--muted); color: var(--muted-foreground);">@currentRole</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4">
+                            @if (user.IsActive)
+                            {
+                                <span class="px-2 py-1 text-xs rounded-full font-medium" style="background: #e8f5e9; color: #2e7d32;">Active</span>
+                            }
+                            else
+                            {
+                                <span class="px-2 py-1 text-xs rounded-full font-medium" style="background: #fbe9e7; color: #c62828;">Disabled</span>
+                            }
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            @if (isAdmin)
+                            {
+                                <form method="post" action="/admin/users/toggle-active" class="inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="px-3 py-1 text-xs rounded-md border hover:opacity-80 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);">
+                                        @(user.IsActive ? "Disable" : "Enable")
+                                    </button>
+                                </form>
+                            }
+
+                            @{
+                                bool canDelete = false;
+                                if (currentUserId != user.Id)
+                                {
+                                    if (isAdmin) canDelete = true;
+                                    else if (user.CreatedByUserId == currentUserId && user.Role != "Admin" && user.Role != "Editor") canDelete = true;
+                                }
+                            }
+                            @if (canDelete)
+                            {
+                                <form method="post" action="/admin/users/delete" class="inline ml-2" onsubmit="return confirm('Are you sure you want to delete this user? This cannot be undone.');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <button type="submit" class="px-3 py-1 text-xs rounded-md border hover:bg-red-50 transition-colors" style="border-color: var(--destructive); color: var(--destructive);">
+                                        Delete
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-6 p-4 rounded-lg border border-dashed text-sm" style="background: var(--muted); border-color: var(--border); color: var(--muted-foreground);">
+        <strong>Note:</strong> Blog visitors (consumers) can read posts and leave comments without any account. Roles only control access to the admin panel.
+        After changing a user's role, they must <strong>log out and back in</strong> for the new permissions to take effect.
+    </div>
+</div>

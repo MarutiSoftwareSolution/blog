@@ -1,0 +1,68 @@
+@{
+    Layout = "_SetupLayout";
+    ViewData["Title"] = "Admin Account";
+}
+
+<div class="setup-container">
+    <div class="setup-card">
+        <div class="setup-step-badge">Step 3 of 4</div>
+        <h1 class="setup-title">Create Admin Account</h1>
+        <p class="setup-subtitle">This will be your main administrator account.</p>
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-error">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <div>@err.ErrorMessage</div>
+                }
+            </div>
+        }
+
+        <form method="post" action="/setup/savestep3">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" class="form-control" placeholder="admin@example.com" required autofocus />
+            </div>
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Min. 8 characters" required oninput="checkStrength(this.value)" />
+                <div class="password-strength" id="strengthBar">
+                    <div class="strength-fill" id="strengthFill"></div>
+                </div>
+                <small class="strength-label" id="strengthLabel"></small>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password *</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" placeholder="Repeat password" required />
+            </div>
+            <div class="setup-steps-preview">
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot active"></div>
+                <div class="step-dot"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg">Continue →</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function checkStrength(val) {
+    var score = 0;
+    if (val.length >= 8) score++;
+    if (/[A-Z]/.test(val)) score++;
+    if (/[0-9]/.test(val)) score++;
+    if (/[^A-Za-z0-9]/.test(val)) score++;
+    var fill = document.getElementById('strengthFill');
+    var label = document.getElementById('strengthLabel');
+    var colors = ['#ef4444','#f97316','#eab308','#22c55e'];
+    var labels = ['Weak','Fair','Good','Strong'];
+    fill.style.width = (score * 25) + '%';
+    fill.style.background = colors[score - 1] || '#e5e7eb';
+    label.textContent = score > 0 ? labels[score - 1] : '';
+}
+</script>
+}

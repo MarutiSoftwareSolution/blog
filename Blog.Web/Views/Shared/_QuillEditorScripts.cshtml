@@ -1,0 +1,201 @@
+<!-- Quill CDN -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<style>
+    .ql-toolbar { border: none !important; background: transparent; border-bottom: 1px solid var(--border) !important; }
+    .ql-container { border: none !important; font-family: var(--font-sans); font-size: 1rem; }
+    .ql-editor { padding: 1.5rem; min-height: 400px; }
+    .ql-editor.ql-blank::before { font-style: normal !important; }
+    #editor-container { display: flex; flex-direction: column; }
+    #quill-editor { flex: 1; overflow-y: auto; }
+    /* Divider */
+    .ql-editor hr {
+        border: none !important;
+        border-top: 2px solid var(--border, #e2e8f0) !important;
+        margin: 1.25rem 0;
+        height: 0;
+        display: block;
+    }
+    /* Button Block */
+    .ql-editor .ql-button-block {
+        margin: 0.75rem 0;
+        display: flex;
+        justify-content: flex-start; /* default: left */
+    }
+    .ql-editor .ql-button-block[data-align="center"] { justify-content: center; }
+    .ql-editor .ql-button-block[data-align="right"]  { justify-content: flex-end; }
+    .ql-editor .ql-button-block[data-align="full"]   { display: block; }
+    .ql-editor .ql-button-block a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.55rem 1.5rem;
+        background: var(--primary, #6366f1);
+        color: #fff !important;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-decoration: none !important;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .ql-editor .ql-button-block[data-align="full"] a { width: 100%; }
+    .ql-editor .ql-button-block a:hover { filter: brightness(0.88); }
+</style>
+
+<script>
+    var BlockEmbed = Quill.import('blots/block/embed');
+
+    // ── Divider Blot (<hr>) ─────────────────────────────────────────
+    class DividerBlot extends BlockEmbed {
+        static create()  { return document.createElement('hr'); }
+        static value()   { return true; }
+    }
+    DividerBlot.blotName = 'divider';
+    DividerBlot.tagName  = 'hr';
+    Quill.register(DividerBlot);
+
+    // ── Button Block Blot ───────────────────────────────────────────
+    class ButtonBlockBlot extends BlockEmbed {
+        static create(value) {
+            const wrap  = document.createElement('div');
+            wrap.classList.add('ql-button-block');   // must add manually when overriding create()
+            const align = (value && value.align) ? value.align : 'left';
+            wrap.setAttribute('data-align', align);
+            const a = document.createElement('a');
+            a.textContent = (value && value.text) ? value.text : 'Click here';
+            a.setAttribute('href',   (value && value.url)  ? value.url  : '#');
+            a.setAttribute('target', '_blank');
+            a.setAttribute('rel',    'noopener noreferrer');
+            // store for value() re-hydration
+            wrap.setAttribute('data-text',  a.textContent);
+            wrap.setAttribute('data-url',   a.getAttribute('href'));
+            wrap.appendChild(a);
+            return wrap;
+        }
+        static value(node) {
+            return {
+                text:  node.getAttribute('data-text')  || (node.querySelector('a') ? node.querySelector('a').textContent : ''),
+                url:   node.getAttribute('data-url')   || (node.querySelector('a') ? node.querySelector('a').getAttribute('href') : '#'),
+                align: node.getAttribute('data-align') || 'left',
+            };
+        }
+    }
+    ButtonBlockBlot.blotName  = 'button-block';
+    ButtonBlockBlot.tagName   = 'div';
+    ButtonBlockBlot.className = 'ql-button-block';
+    Quill.register(ButtonBlockBlot);
+
+    function initQuill(editorId, contentInputId) {
+        var quill = new Quill(editorId, {
+            theme: 'snow',
+            placeholder: "Type '/' for commands or start writing...",
+            modules: {
+                toolbar: {
+                    container: [
+                        [{ 'header': [2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        [{ 'color': [] }, { 'background': [] }],
+                        ['link', 'image', 'code-block'],
+                        ['clean']
+                    ],
+                    handlers: {
+                        image: imageHandler
+                    }
+                }
+            }
+        });
+
+        // Custom Image Handler for Server Upload
+        function imageHandler() {
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.click();
+
+            input.onchange = async () => {
+                var file = input.files[0];
+                if (file) {
+                    var formData = new FormData();
+                    formData.append('file', file);
+                    // Try to get anti-forgery token from the page
+                    var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                    try {
+                        // Create a loading placeholder
+                        var range = quill.getSelection();
+                        quill.insertText(range.index, 'Uploading image...', 'user');
+
+                        const response = await fetch('/admin/media/upload', {
+                            method: 'POST',
+                            body: formData,
+                            headers: token ? { 'RequestVerificationToken': token } : {}
+                        });
+
+                        // Remove placeholder
+                        quill.deleteText(range.index, 19);
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            // Insert the server URL image
+                            quill.insertEmbed(range.index, 'image', data.url);
+                            quill.setSelection(range.index + 1);
+                        } else {
+                            alert('Upload failed. Please try again.');
+                        }
+                    } catch (error) {
+                        console.error('Error uploading image:', error);
+                        alert('Error uploading image.');
+                        quill.deleteText(range.index, 19);
+                    }
+                }
+            };
+        }
+
+        // Helper function for auto-closing pairs
+        function addAutoClose(key, shiftKey, openChar, closeChar) {
+            quill.keyboard.addBinding({
+                key: key,
+                shiftKey: shiftKey,
+                handler: function(range, context) {
+                    this.quill.insertText(range.index, openChar + closeChar);
+                    this.quill.setSelection(range.index + 1);
+                    return false; 
+                }
+            });
+        }
+
+        // --- Keyboard Bindings ---
+        addAutoClose(57, true, '(', ')');
+        addAutoClose(219, false, '[', ']');
+        addAutoClose(219, true, '{', '}');
+        addAutoClose(222, true, '"', '"');
+        addAutoClose(222, false, "'", "'");
+        addAutoClose(188, true, '<', '>');
+
+
+        // --- Sync Logic ---
+        var contentInput = document.getElementById(contentInputId);
+        
+        // Load initial content
+        if (contentInput && contentInput.value) {
+            quill.clipboard.dangerouslyPasteHTML(0, contentInput.value);
+        }
+
+        // Sync changes
+        quill.on('text-change', function() {
+            if (contentInput) {
+                contentInput.value = quill.root.innerHTML;
+            }
+        });
+
+        // Activate slash command menu (/) if the partial is loaded
+        if (typeof window.initSlashMenu === 'function') {
+            window.initSlashMenu(quill);
+        }
+
+        return quill;
+    }
+</script>

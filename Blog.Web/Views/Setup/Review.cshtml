@@ -1,0 +1,36 @@
+@{
+    Layout = "_SetupLayout";
+    ViewData["Title"] = "Review & Launch";
+}
+
+<div class="setup-container">
+    <div class="setup-card">
+        <div class="setup-step-badge">Step 4 of 4</div>
+        <h1 class="setup-title">Ready to Launch!</h1>
+        <p class="setup-subtitle">Review your settings before we create your blog.</p>
+
+        <div class="review-list">
+            <div class="review-item">
+                <span class="review-label">Blog Name</span>
+                <span class="review-value">@ViewBag.BlogName</span>
+            </div>
+            <div class="review-item">
+                <span class="review-label">Admin Email</span>
+                <span class="review-value">@ViewBag.AdminEmail</span>
+            </div>
+        </div>
+
+        <form method="post" action="/setup/launch">
+            @Html.AntiForgeryToken()
+            <div class="setup-steps-preview">
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot"></div>
+                <div class="step-dot active"></div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg btn-launch" id="launchBtn">
+                🚀 Launch My Blog
+            </button>
+        </form>
+    </div>
+</div>

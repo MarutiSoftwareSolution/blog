@@ -1,0 +1,52 @@
+@inject Blog.Core.Interfaces.ISettingRepository SettingsRepo
+@{
+    var userSettings = await SettingsRepo.GetSettingsAsync(ViewBag.OwnerId ?? Guid.Empty);
+    var siteName = userSettings.SiteName;
+    var siteDescription = userSettings.SiteDescription;
+    string twitter   = userSettings.SocialTwitter;
+    string facebook  = userSettings.SocialFacebook;
+    string instagram = userSettings.SocialInstagram;
+    string youtube   = userSettings.SocialYoutube;
+    string linkedin  = userSettings.SocialLinkedin;
+    string github    = userSettings.SocialGithub;
+}
+
+@* MAGAZINE footer — inverted primary band at bottom, bold brand, coloured icon buttons *@
+<footer>
+    @* Main band — inverted primary *@
+    <div style="background: var(--primary);">
+        <div class="container xl:max-w-6xl mx-auto px-4 py-12 md:py-16">
+            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+                @* Brand *@
+                <div class="flex flex-col gap-3 max-w-sm">
+                    <a href="/" class="text-2xl font-black tracking-tight uppercase hover:opacity-70 transition-opacity"
+                       style="color: var(--primary-foreground);">@siteName</a>
+                    <p class="text-sm leading-relaxed" style="color: color-mix(in srgb, var(--primary-foreground) 70%, transparent);">@siteDescription</p>
+                </div>
+                @* Social icons — semi-transparent on primary bg *@
+                <div class="flex flex-col gap-3">
+                    <span class="text-[10px] uppercase tracking-[0.2em] font-semibold" style="color: color-mix(in srgb, var(--primary-foreground) 60%, transparent);">Connect</span>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <a href="/feed" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity"
+                           style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="RSS Feed">
+                            <i class="bi bi-rss-fill text-sm"></i>
+                        </a>
+                        @if (!string.IsNullOrEmpty(twitter))   { <a href="@twitter"   target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="X / Twitter"><i class="bi bi-twitter-x text-sm"></i></a> }
+                        @if (!string.IsNullOrEmpty(facebook))  { <a href="@facebook"  target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="Facebook"><i class="bi bi-facebook text-sm"></i></a> }
+                        @if (!string.IsNullOrEmpty(instagram)) { <a href="@instagram" target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="Instagram"><i class="bi bi-instagram text-sm"></i></a> }
+                        @if (!string.IsNullOrEmpty(youtube))   { <a href="@youtube"   target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="YouTube"><i class="bi bi-youtube text-sm"></i></a> }
+                        @if (!string.IsNullOrEmpty(linkedin))  { <a href="@linkedin"  target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="LinkedIn"><i class="bi bi-linkedin text-sm"></i></a> }
+                        @if (!string.IsNullOrEmpty(github))    { <a href="@github"    target="_blank" class="w-9 h-9 flex items-center justify-center hover:opacity-60 transition-opacity" style="background: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: var(--primary-foreground);" title="GitHub"><i class="bi bi-github text-sm"></i></a> }
+                    </div>
+                </div>
+            </div>
+        </div>
+        @* Copyright *@
+        <div class="border-t py-4 text-xs" style="border-color: color-mix(in srgb, var(--primary-foreground) 20%, transparent); color: color-mix(in srgb, var(--primary-foreground) 60%, transparent);">
+            <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-between">
+                <span>Copyright &copy; @DateTime.Now.Year @siteName. All rights reserved.</span>
+                <a href="/" class="hover:opacity-60 transition-opacity uppercase tracking-widest text-[10px]" style="color: var(--primary-foreground);">Home</a>
+            </div>
+        </div>
+    </div>
+</footer>

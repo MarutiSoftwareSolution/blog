@@ -1,0 +1,84 @@
+@model List<Blog.Core.Domain.Page>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Pages";
+}
+
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <a href="/admin/pages/create" class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium text-sm shadow-sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Page
+        </a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="bg-card rounded-lg border border-border p-12 text-center text-muted-foreground">
+             <div class="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+            </div>
+            <h3 class="text-lg font-medium text-foreground mb-1">No pages created</h3>
+            <p>Create static pages like "About" or "Contact".</p>
+        </div>
+    }
+    else
+    {
+        <div class="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+                        <tr>
+                            <th class="px-4 py-3">Title</th>
+                            <th class="px-4 py-3">URL Slug</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Updated</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        @foreach (var item in Model)
+                        {
+                            <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="px-4 py-3 font-medium">
+                                    <a href="/admin/pages/edit/@item.Id" class="text-foreground hover:text-primary transition-colors">@item.Title</a>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground font-mono text-xs">
+                                    /@item.Slug
+                                </td>
+                                <td class="px-4 py-3">
+                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                                        @(item.IsPublished ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800")">
+                                        @(item.IsPublished ? "Published" : "Draft")
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">
+                                    @item.UpdatedAt.ToString("MMM d, yyyy")
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-2 transition-opacity">
+                                        <a href="/admin/pages/edit/@item.Id" class="p-2 text-muted-foreground hover:text-primary transition-colors" title="Edit">
+                                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                        </a>
+                                        @if (item.IsPublished)
+                                        {
+                                            <a href="/@item.Slug" target="_blank" class="p-2 text-muted-foreground hover:text-green-600 transition-colors" title="View">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            </a>
+                                        }
+                                        <form action="/admin/pages/delete/@item.Id" method="post" onsubmit="return confirm('Ensure to delete?');" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="p-2 text-muted-foreground hover:text-destructive transition-colors" title="Delete">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -1,0 +1,44 @@
+@model Blog.Web.Models.SidebarViewModel
+
+<aside class="lg:col-span-3 lg:order-first order-last space-y-8 sticky top-24">
+    <!-- Categories Widget -->
+    @if (Model.Categories.Any())
+    {
+        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <h3 class="font-bold text-xs uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                Categories
+            </h3>
+            <ul class="space-y-3">
+                @foreach (var cat in Model.Categories)
+                {
+                    <li>
+                        <a href="/category/@cat.Slug" class="flex items-center justify-between group px-3 py-2 rounded-lg transition-colors duration-300">
+                            <span class="text-foreground group-hover:text-primary transition-colors font-medium">@cat.Name</span>
+                            <span class="bg-secondary text-secondary-foreground text-xs font-bold px-2.5 py-0.5 rounded-full group-hover:text-primary transition-colors duration-300">@cat.PostCount</span>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <!-- Tags Widget -->
+    @if (Model.Tags.Any())
+    {
+        <div class="bg-card border border-border rounded-xl p-6 shadow-sm">
+            <h3 class="font-bold text-xs uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+                Tags
+            </h3>
+            <div class="flex flex-wrap gap-2">
+                @foreach (var tag in Model.Tags)
+                {
+                    <a href="/tag/@tag.Slug" class="px-3 py-1.5 bg-secondary/50 text-secondary-foreground text-sm font-medium rounded-lg hover:text-primary transition-colors duration-300">
+                        #@tag.Name
+                    </a>
+                }
+            </div>
+        </div>
+    }
+</aside>

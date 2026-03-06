@@ -1,0 +1,46 @@
+@model Blog.Core.Domain.Post
+
+<!-- Post item -->
+<article class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 py-8 border-b border-solid shadow-sm rounded last:border-b-0" style="border-color: var(--border);">
+    <!-- Thumbnail -->
+    <div class="aspect-[2/1] md:aspect-[3/2] overflow-hidden w-full" style="background: var(--muted);">
+        <a href="/@Model.Slug">
+            @if (!string.IsNullOrEmpty(Model.FeatureImage))
+            {
+                <img class="w-full h-full object-cover hover:scale-105 transition-transform duration-500" src="@Model.FeatureImage" alt="@Model.Title" loading="lazy" />
+            }
+            else
+            {
+                <div class="w-full h-full flex items-center justify-center" style="background: var(--muted);">
+                    <span class="text-4xl font-black opacity-10" style="color: var(--foreground);">@Model.Title.FirstOrDefault()</span>
+                </div>
+            }
+        </a>
+    </div>
+
+    <!-- Content -->
+    <div class="flex flex-col justify-start gap-2">
+        <!-- Title -->
+        <h3 class="text-xl capitalize">
+            <a href="/@Model.Slug" class="hover:opacity-70 transition-opacity">@Model.Title</a>
+        </h3>
+        <div class="flex items-center gap-3 text-sm" style="color: var(--muted-foreground);">
+            <!-- Author -->
+            <a href="#" rel="author"><i class="bi bi-person me-1"></i>@(string.IsNullOrEmpty(Model.AuthorName) ? "Anonymous" : Model.AuthorName)</a>
+            <!-- Date -->
+            <time datetime="@Model.PublishedAt?.ToString("yyyy-MM-dd")"><i class="bi bi-calendar me-1"></i>@Model.PublishedAt?.ToString("MMM dd, yyyy")</time>
+        </div>
+        <!-- Description -->
+        @if (!string.IsNullOrEmpty(Model.MetaDescription))
+        {
+            <p class="mb-2" style="color: var(--muted-foreground);">@(Model.MetaDescription.Length > 150 ? Model.MetaDescription.Substring(0, 150) + "..." : Model.MetaDescription)</p>
+        }
+        else if (!string.IsNullOrEmpty(Model.Plaintext))
+        {
+            <p class="mb-2" style="color: var(--muted-foreground);">@(Model.Plaintext.Length > 150 ? Model.Plaintext.Substring(0, 150) + "..." : Model.Plaintext)</p>
+        }
+        <div class="relative">
+            <a href="/@Model.Slug" class="inline-flex py-2 px-4 border border-solid shadow-sm rounded hover:opacity-80" style="background: var(--muted); border-color: var(--border);">Read More</a>
+        </div>
+    </div>
+</article>

@@ -1,0 +1,420 @@
+@model Blog.Web.Models.ThemeSettingsViewModel
+@using Blog.Web.Controllers
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Theme Settings";
+
+    var presets = ViewData["Presets"] as List<ThemeSettingsController.ThemePreset> ?? new();
+
+    var currentColors = Model.Settings
+        .Where(s => s.SettingGroup == "colors")
+        .ToDictionary(s => s.SettingKey, s => s.EffectiveValue);
+    string? activePresetId = null;
+    foreach (var p in presets)
+    {
+        if (currentColors.TryGetValue("primary", out var pv) && pv?.Equals(p.Primary, StringComparison.OrdinalIgnoreCase) == true
+            && currentColors.TryGetValue("background", out var bv) && bv?.Equals(p.Background, StringComparison.OrdinalIgnoreCase) == true)
+        {
+            activePresetId = p.Id;
+            break;
+        }
+    }
+
+
+
+    // Build current typography values
+    var currentFontHeading = Model.Settings.FirstOrDefault(s => s.SettingKey == "font-heading")?.EffectiveValue ?? "Montserrat";
+    var currentFontBody = Model.Settings.FirstOrDefault(s => s.SettingKey == "font-body")?.EffectiveValue ?? "Merriweather";
+    var currentLayout = Model.Settings.FirstOrDefault(s => s.SettingKey == "layout-index")?.EffectiveValue ?? "Neutral";
+}
+
+<div class="flex gap-6 h-[calc(100vh-8rem)]" x-data="{ showFineTune: false }">
+
+    @* ── LEFT: Editor Panel ──────────────────────────────────────── *@
+    <div class="w-[420px] flex-shrink-0 overflow-y-auto bg-card border border-border rounded-xl shadow-sm">
+
+        @* Header *@
+        <div class="p-4 flex items-center justify-between border-b border-border sticky top-0 bg-card z-10">
+            <h2 class="text-base font-semibold text-foreground">Theme</h2>
+            <div class="flex items-center gap-2">
+                <button type="button" @@click="showFineTune = !showFineTune"
+                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors"
+                        :class="showFineTune ? 'bg-muted text-foreground' : ''">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Fine-Tune
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                         class="transition-transform duration-200" :class="showFineTune ? 'rotate-180' : ''">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </button>
+                <form asp-action="Reset" asp-controller="ThemeSettings" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" onclick="return confirm('Reset all theme settings to defaults?')"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border border-border text-muted-foreground hover:bg-muted transition-colors">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        Reset
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* Layout Selector *@
+        <div class="p-4 border-b border-border">
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Blog Layout</p>
+            <div class="grid grid-cols-2 gap-3">
+                @{
+                    var layouts = new[] {
+                        new { Id = "Neutral", Name = "Neutral", Desc = "Minimal, dashed borders, sidebar" },
+                        new { Id = "Magazine", Name = "Magazine", Desc = "Bold cards, hero, no sidebar" },
+                        new { Id = "Grid", Name = "Grid View", Desc = "Modern grid, clean look" },
+                        new { Id = "Minimal", Name = "Minimalist", Desc = "Focus on typography" },
+                        new { Id = "Classic", Name = "Classic Blog", Desc = "Right sidebar, standard layout" },
+                        new { Id = "Modern", Name = "Professional", Desc = "Sharp edges, solid colours, corporate" }
+                    };
+                }
+                @foreach (var layout in layouts)
+                {
+                    var isActiveLayout = layout.Id == currentLayout;
+                    <form method="post" asp-action="ApplyLayoutPreset" asp-controller="ThemeSettings" asp-route-presetId="@layout.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="w-full text-left rounded-lg border-2 transition-all duration-200 overflow-hidden hover:shadow-md @(isActiveLayout ? "border-primary ring-2 ring-primary/30 shadow-md" : "border-border hover:border-primary/50")">
+                            <div class="h-14 relative bg-muted flex items-center justify-center">
+                                @if (layout.Id == "Neutral")
+                                {
+                                    <div class="flex gap-1 items-center">
+                                        <div class="w-4 h-8 border border-dashed border-muted-foreground/30 rounded-sm"></div>
+                                        <div class="flex flex-col gap-0.5">
+                                            <div class="w-10 h-2 bg-muted-foreground/20 rounded-sm"></div>
+                                            <div class="w-8 h-2 bg-muted-foreground/20 rounded-sm"></div>
+                                            <div class="w-10 h-2 bg-muted-foreground/20 rounded-sm"></div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="grid grid-cols-3 gap-0.5 px-2">
+                                        <div class="w-4 h-5 bg-primary/30 rounded-sm"></div>
+                                        <div class="w-4 h-5 bg-primary/20 rounded-sm"></div>
+                                        <div class="w-4 h-5 bg-primary/30 rounded-sm"></div>
+                                    </div>
+                                }
+                            </div>
+                            <div class="px-2.5 py-2 bg-card border-t border-border">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xs font-semibold block">@layout.Name</span>
+                                        <span class="text-[10px] text-muted-foreground">@layout.Desc</span>
+                                    </div>
+                                    @if (isActiveLayout)
+                                    {
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-primary shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                                    }
+                                </div>
+                            </div>
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @* Preset Grid *@
+        <div class="p-4">
+            <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Presets</p>
+            <div class="grid grid-cols-2 gap-3">
+                @foreach (var preset in presets)
+                {
+                    var isActive = preset.Id == activePresetId;
+                    <form method="post" asp-action="ApplyPreset" asp-route-presetId="@preset.Id">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="w-full text-left rounded-lg border-2 transition-all duration-200 overflow-hidden hover:shadow-md @(isActive ? "border-primary ring-2 ring-primary/30 shadow-md" : "border-border hover:border-primary/50")">
+                            <div class="h-16 relative" style="background: @preset.Background;">
+                                <div class="absolute bottom-0 left-0 right-0 h-1.5" style="background: @preset.Primary;"></div>
+                                <div class="p-2 flex flex-col justify-between h-full">
+                                    <div class="flex gap-1">
+                                        <div class="w-3 h-3 rounded-full shadow-sm" style="background: @preset.Primary;"></div>
+                                        <div class="w-3 h-3 rounded-full shadow-sm" style="background: @preset.Secondary;"></div>
+                                        <div class="w-3 h-3 rounded-full shadow-sm" style="background: @preset.Accent;"></div>
+                                    </div>
+                                    <div class="flex gap-1">
+                                        <div class="h-1.5 rounded-full flex-1" style="background: @preset.Foreground; opacity: 0.5;"></div>
+                                        <div class="h-1.5 rounded-full w-4" style="background: @preset.MutedForeground; opacity: 0.3;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="px-2.5 py-2" style="background: @preset.Card; border-top: 1px solid @preset.Border;">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-semibold" style="color: @preset.Foreground;">@preset.Name</span>
+                                    @if (isActive)
+                                    {
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" class="text-primary shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+                                    }
+                                </div>
+                            </div>
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+
+        @* Fine-Tune Panel (collapsible) *@
+        <div x-show="showFineTune" x-collapse x-cloak class="border-t border-border">
+            <form asp-action="Update" asp-controller="ThemeSettings" method="post" class="p-4 space-y-5">
+                @Html.AntiForgeryToken()
+
+                @* Colors *@
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 pb-2 border-b border-border">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.63 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-1 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-5.17-4.49-9-10-9z"/></svg>
+                        <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider">Colors</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach (var setting in Model.Settings.Where(s => s.SettingGroup == "colors"))
+                        {
+                            <div class="flex items-center gap-2 p-2 rounded-md bg-muted/30 border border-border/50">
+                                <input type="color" name="settings[@setting.SettingKey]" value="@setting.EffectiveValue"
+                                       data-key="@setting.SettingKey"
+                                       class="theme-color-input w-8 h-8 rounded border border-input cursor-pointer p-0.5 bg-background flex-shrink-0" />
+                                <div class="min-w-0">
+                                    <p class="text-xs font-medium text-foreground truncate">@setting.Label</p>
+                                    <p class="text-[10px] text-muted-foreground font-mono">@setting.EffectiveValue</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* Typography *@
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 pb-2 border-b border-border">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+                        <h3 class="text-xs font-semibold text-foreground uppercase tracking-wider">Typography</h3>
+                    </div>
+                    @foreach (var setting in Model.Settings.Where(s => s.SettingGroup == "typography"))
+                    {
+                        <div class="space-y-1">
+                            <label class="text-xs font-medium text-foreground">@setting.Label</label>
+                            <div x-data="fontSelector('@setting.EffectiveValue.Replace("'", "\\'")', '@setting.SettingKey')" class="relative" @@click.away="isOpen = false">
+                                <div @@click="isOpen = !isOpen" class="flex h-9 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-1 text-xs cursor-pointer select-none hover:bg-muted/30 transition-colors">
+                                    <span x-text="selectedFont"></span>
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground"><path d="M6 9l6 6 6-6"/></svg>
+                                </div>
+                                <input type="hidden" name="settings[@setting.SettingKey]" x-model="selectedFont" data-key="@setting.SettingKey" class="theme-font-input" />
+                                
+                                <div x-show="isOpen" style="display: none;" class="absolute z-[100] mt-1 w-full rounded-md border border-border bg-popover text-popover-foreground shadow-lg top-full left-0">
+                                    <div class="p-2 border-b border-border bg-popover rounded-t-md sticky top-0 z-10">
+                                        <div class="relative">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-2.5 top-2.5 text-muted-foreground"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                                            <input type="text" x-model="searchQuery" placeholder="Search Google Fonts..." class="w-full h-8 rounded-sm bg-background border border-input pl-8 pr-2 text-xs outline-none focus:ring-1 focus:ring-ring" @@keydown.stop />
+                                        </div>
+                                    </div>
+                                    <div class="max-h-[220px] overflow-y-auto p-1 bg-popover rounded-b-md" @@scroll="handleScroll($event.target)">
+                                        <template x-if="loading">
+                                            <div class="p-4 flex justify-center items-center">
+                                                <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                                            </div>
+                                        </template>
+                                        <template x-for="font in filteredFonts" :key="font.family">
+                                            <div @@click="selectFont(font.family)" 
+                                                 class="relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs outline-none hover:bg-accent hover:text-accent-foreground transition-colors"
+                                                 :class="font.family === selectedFont ? 'bg-primary/10 text-primary font-semibold' : ''">
+                                                <span x-text="font.family" :style="`font-family: '${font.family}', sans-serif;`"></span>
+                                            </div>
+                                        </template>
+                                        <template x-if="!loading && filteredFonts.length === 0">
+                                            <div class="px-2 py-4 text-center text-xs text-muted-foreground">No matching fonts.</div>
+                                        </template>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <button type="submit" class="w-full inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 shadow-sm transition-colors">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Custom Theme
+                </button>
+            </form>
+        </div>
+    </div>
+
+    @* ── RIGHT: Live Homepage Preview ────────────────────────────── *@
+    <div class="flex-1 min-w-0 bg-card border border-border rounded-xl shadow-sm overflow-hidden flex flex-col">
+        <div class="px-4 py-3 border-b border-border flex items-center justify-between bg-card">
+            <div class="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-muted-foreground"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <span class="text-sm font-medium text-foreground">Live Preview</span>
+            </div>
+        </div>
+        <div class="flex-1 bg-muted/20 relative">
+            <iframe id="preview-iframe" src="/" class="w-full h-full border-0" style="transform-origin: top left;"></iframe>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Live preview: inject CSS variables into iframe ──
+        function updateIframeStyles() {
+            const iframe = document.getElementById('preview-iframe');
+            if (!iframe || !iframe.contentDocument) return;
+
+            const doc = iframe.contentDocument;
+            let styleEl = doc.getElementById('theme-live-override');
+            if (!styleEl) {
+                styleEl = doc.createElement('style');
+                styleEl.id = 'theme-live-override';
+                doc.head.appendChild(styleEl);
+            }
+
+            // Collect all color values
+            const vars = [];
+            document.querySelectorAll('.theme-color-input').forEach(input => {
+                vars.push(`--${input.dataset.key}: ${input.value};`);
+            });
+
+            // Collect font values
+            document.querySelectorAll('.theme-font-input').forEach(select => {
+                const key = select.dataset.key;
+                const val = select.value;
+                if (key === 'font-heading') {
+                    vars.push(`--font-sans: '${val}', sans-serif;`);
+                } else if (key === 'font-body') {
+                    vars.push(`--font-body: '${val}', serif;`);
+                    vars.push(`--font-serif: '${val}', serif;`);
+                }
+            });
+
+            styleEl.textContent = `:root { ${vars.join(' ')} }`;
+        }
+
+        // Wait for iframe to load before attaching listeners
+        const iframe = document.getElementById('preview-iframe');
+        iframe.addEventListener('load', () => {
+            // Attach live color change listeners
+            document.querySelectorAll('.theme-color-input').forEach(input => {
+                input.addEventListener('input', () => {
+                    // Update hex display
+                    const hexDisplay = input.closest('.flex')?.querySelector('.text-\\[10px\\]');
+                    if (hexDisplay) hexDisplay.textContent = input.value;
+                    updateIframeStyles();
+                });
+            });
+
+            // Attach font change listeners - wait for Alpine changes
+            document.querySelectorAll('.theme-font-input').forEach(input => {
+                input.addEventListener('change', () => {
+                    // Load font in iframe
+                    const fontName = input.value.replace(/ /g, '+');
+                    const doc = iframe.contentDocument;
+                    if (doc) {
+                        const link = doc.createElement('link');
+                        link.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@300;400;500;600;700&display=swap`;
+                        link.rel = 'stylesheet';
+                        doc.head.appendChild(link);
+                    }
+                    updateIframeStyles();
+                });
+            });
+        });
+
+        // Alpine.js Font Selector Component
+        document.addEventListener('alpine:init', () => {
+            window.googleFontsList = null;
+            window.fetchingFonts = null;
+            
+            Alpine.data('fontSelector', (initialValue, key) => ({
+                selectedFont: initialValue,
+                key: key,
+                isOpen: false,
+                searchQuery: '',
+                fonts: [],
+                loading: false,
+                limit: 50,
+                
+                async init() {
+                    // Provide a quick initial generic set of popular fonts for instant render
+                    this.fonts = [
+                        { family: 'Inter' }, { family: 'Roboto' }, { family: 'Open Sans' }, { family: 'Montserrat' },
+                        { family: 'Manrope' }, { family: 'Outfit' }, { family: 'Merriweather' }, { family: 'Playfair Display' },
+                        { family: 'Lora' }, { family: 'Libre Baskerville' }, { family: 'Oswald' }, { family: 'Raleway' }, { family: 'Poppins' }
+                    ];
+                    
+                    // If the current font isn't in the initial list, insert it
+                    if (this.selectedFont && !this.fonts.find(f => f.family === this.selectedFont)) {
+                        this.fonts.unshift({ family: this.selectedFont });
+                    }
+                    
+                    this.$watch('isOpen', async (val) => {
+                        if (val && (!window.googleFontsList || this.fonts.length < 100)) {
+                            this.loadFonts();
+                        }
+                    });
+                    
+                    this.$watch('selectedFont', () => {
+                        setTimeout(() => {
+                            const input = this.$el.querySelector('.theme-font-input');
+                            if(input) input.dispatchEvent(new Event('change', { bubbles: true }));
+                        }, 50);
+                    });
+                    
+                    this.$watch('searchQuery', () => {
+                        this.limit = 50;
+                    });
+                },
+                
+                async loadFonts() {
+                    if (window.googleFontsList) {
+                        this.fonts = window.googleFontsList;
+                        return;
+                    }
+                    if (!window.fetchingFonts) {
+                        this.loading = true;
+                        window.fetchingFonts = fetch('https://api.fontsource.org/v1/fonts')
+                            .then(res => res.json())
+                            .then(data => {
+                                // Extract just the family names and sort them
+                                window.googleFontsList = data.map(f => ({ family: f.family }));
+                                return window.googleFontsList;
+                            })
+                            .catch(err => {
+                                console.error("Could not load full font list", err);
+                                return this.fonts; // fallback to hardcoded
+                            });
+                    }
+                    
+                    const remoteFonts = await window.fetchingFonts;
+                    this.fonts = remoteFonts;
+                    
+                    // Make sure currently selected font is always prepended to top if not found
+                    if (!this.fonts.find(f => f.family === this.selectedFont)) {
+                        this.fonts.unshift({ family: this.selectedFont });
+                    }
+                    
+                    this.loading = false;
+                },
+                
+                get filteredFonts() {
+                    let filtered = this.fonts;
+                    if (this.searchQuery.trim() !== '') {
+                        const q = this.searchQuery.toLowerCase();
+                        filtered = this.fonts.filter(f => f.family.toLowerCase().includes(q));
+                    }
+                    return filtered.slice(0, this.limit);
+                },
+                
+                handleScroll(el) {
+                    if (el.scrollHeight - el.scrollTop <= el.clientHeight + 100) {
+                        this.limit += 50;
+                    }
+                },
+                
+                selectFont(family) {
+                    this.selectedFont = family;
+                    this.isOpen = false;
+                    this.searchQuery = '';
+                }
+            }));
+        });
+    </script>
+}

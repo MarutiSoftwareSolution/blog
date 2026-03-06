@@ -1,0 +1,538 @@
+@model HashSet<string>
+@{
+    var completed = Model ?? new HashSet<string>();
+    var tasks = new[]
+    {
+        new { Id = "name_your_blog",          Label = "Name your blog",               Desc = "Give your blog a unique identity",         Href = "/admin/settings",      Icon = "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" },
+        new { Id = "write_first_post",        Label = "Write your first post",         Desc = "Share your ideas with the world",           Href = "/admin/posts/create",   Icon = "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M12 18v-6 M9 15h6" },
+        new { Id = "update_profile",          Label = "Update your profile",           Desc = "Add a bio and profile picture",             Href = "/account/profile",      Icon = "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
+        new { Id = "explore_editor",          Label = "Explore the editor",            Desc = "Try headings, images, and code blocks",     Href = "/admin/posts/create",   Icon = "M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" },
+        new { Id = "upload_cover",            Label = "Upload a cover image",          Desc = "Make your blog visually stand out",         Href = "/admin/media",         Icon = "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M17 8l-5-5-5 5 M12 3v12" },
+        new { Id = "configure_settings",      Label = "Configure comment settings",    Desc = "Choose how readers can interact",           Href = "/admin/settings",      Icon = "M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" },
+    };
+    int totalTasks    = tasks.Length;
+    int doneCount     = tasks.Count(t => completed.Contains(t.Id));
+    int pctComplete   = (int)Math.Round((double)doneCount / totalTasks * 100);
+    bool allDone      = doneCount == totalTasks;
+}
+
+<div id="onboarding-panel" class="onboarding-panel mb-6">
+    <div class="onboarding-card">
+
+        <!-- Header row -->
+        <div class="onboarding-header">
+            <div class="onboarding-title-group">
+                <div>
+                    <h2 class="onboarding-title">
+                        @(allDone ? "You're all set! 🎉" : "Let's get started!")
+                    </h2>
+                    <p class="onboarding-subtitle">
+                        @(allDone
+                            ? "You've completed the setup. Your blog is ready to shine."
+                            : $"Complete these steps to set up your blog — {doneCount} of {totalTasks} done.")
+                    </p>
+                </div>
+            </div>
+            <button id="onboarding-dismiss-btn" class="onboarding-dismiss-btn" title="Dismiss onboarding">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="onboarding-progress-wrap">
+            <div class="onboarding-progress-bar">
+                <div class="onboarding-progress-fill" id="onboarding-progress-fill"
+                     style="width: 0%" data-target="@pctComplete%">
+                </div>
+            </div>
+            <span class="onboarding-progress-label">@doneCount / @totalTasks</span>
+        </div>
+
+        <!-- Task list -->
+        <div class="onboarding-tasks" id="onboarding-tasks-list">
+            @foreach (var task in tasks)
+            {
+                bool isDone = completed.Contains(task.Id);
+                <div class="onboarding-task @(isDone ? "onboarding-task--done" : "")" id="task-row-@task.Id" data-task-id="@task.Id">
+                    <div class="onboarding-task-check" id="check-@task.Id">
+                        @if (isDone)
+                        {
+                            <svg class="onboarding-check-svg onboarding-check-svg--done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                        }
+                        else
+                        {
+                            <svg class="onboarding-check-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                        }
+                    </div>
+                    <div class="onboarding-task-info">
+                        <span class="onboarding-task-label">@task.Label</span>
+                        <span class="onboarding-task-desc">@task.Desc</span>
+                    </div>
+                    @if (!isDone)
+                    {
+                        <div class="onboarding-task-actions">
+                            <button class="onboarding-skip-btn"
+                                    data-task-id="@task.Id"
+                                    title="Skip this task">
+                                Skip
+                            </button>
+                            <a href="@task.Href" class="onboarding-go-btn" title="Go to @task.Label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="onboarding-task-actions">
+                            <a href="@task.Href" class="onboarding-view-btn" title="View @task.Label">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Footer -->
+        @if (!allDone)
+        {
+            <div class="onboarding-footer">
+                <button id="onboarding-skip-all-btn" class="onboarding-skip-all-btn">
+                    Skip all remaining
+                </button>
+            </div>
+        }
+
+    </div>
+</div>
+
+<!-- Confetti canvas (shown only when all done is triggered via JS) -->
+<canvas id="onboarding-confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;"></canvas>
+
+<style>
+/* ── Onboarding panel ───────────────────────────────────────── */
+.onboarding-panel {
+    animation: onboarding-slide-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@@keyframes onboarding-slide-in {
+    from { opacity: 0; transform: translateY(-12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.onboarding-panel.onboarding-panel--exit {
+    animation: onboarding-slide-out 0.35s cubic-bezier(0.4, 0, 1, 1) forwards;
+    overflow: hidden;
+}
+@@keyframes onboarding-slide-out {
+    0%   { opacity: 1; transform: scaleY(1); max-height: 600px; }
+    100% { opacity: 0; transform: scaleY(0.9); max-height: 0; margin: 0; padding: 0; }
+}
+
+.onboarding-card {
+    background: var(--card, #fff);
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Header */
+.onboarding-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.onboarding-title-group {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.onboarding-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--foreground, #111);
+    margin: 0 0 2px;
+    line-height: 1.3;
+}
+.onboarding-subtitle {
+    font-size: 0.85rem;
+    color: var(--muted-foreground, #6b7280);
+    margin: 0;
+}
+.onboarding-dismiss-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted-foreground, #9ca3af);
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: -2px;
+}
+.onboarding-dismiss-btn:hover {
+    background: var(--muted, #f3f4f6);
+    color: var(--foreground, #111);
+}
+
+/* Progress bar */
+.onboarding-progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.onboarding-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--muted, #f3f4f6);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.onboarding-progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--primary, #6366f1), #a78bfa);
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.onboarding-progress-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted-foreground, #6b7280);
+    white-space: nowrap;
+    min-width: 36px;
+}
+
+/* Task list */
+.onboarding-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.onboarding-task {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--border, #e5e7eb);
+    transition: background 0.15s;
+    position: relative;
+}
+.onboarding-task:last-child { border-bottom: none; }
+.onboarding-task:hover { background: var(--muted, #f9fafb); }
+.onboarding-task--done { opacity: 0.6; }
+.onboarding-task--done:hover { background: transparent; }
+
+/* Checking in animation when task completes */
+.onboarding-task--completing {
+    animation: task-complete-flash 0.5s ease;
+}
+@@keyframes task-complete-flash {
+    0%   { background: transparent; }
+    30%  { background: #dcfce7; }
+    100% { background: transparent; }
+}
+
+/* Check icon */
+.onboarding-task-check {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+}
+.onboarding-check-svg {
+    width: 22px;
+    height: 22px;
+    color: var(--muted-foreground, #d1d5db);
+}
+.onboarding-check-svg--done {
+    color: #22c55e;
+    animation: check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@@keyframes check-pop {
+    0%   { transform: scale(0); opacity: 0; }
+    70%  { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* Task info */
+.onboarding-task-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.onboarding-task-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--foreground, #111);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.onboarding-task--done .onboarding-task-label {
+    text-decoration: line-through;
+    color: var(--muted-foreground, #9ca3af);
+}
+.onboarding-task-desc {
+    font-size: 0.775rem;
+    color: var(--muted-foreground, #9ca3af);
+}
+
+/* Task action buttons */
+.onboarding-task-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.onboarding-skip-btn {
+    background: none;
+    border: 1px solid var(--border, #e5e7eb);
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--muted-foreground, #9ca3af);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.onboarding-skip-btn:hover {
+    background: var(--muted, #f3f4f6);
+    color: var(--foreground, #111);
+    border-color: var(--muted-foreground, #9ca3af);
+}
+.onboarding-go-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--primary, #6366f1);
+    color: #fff;
+    text-decoration: none;
+    transition: background 0.15s, transform 0.1s;
+    flex-shrink: 0;
+}
+.onboarding-go-btn:hover {
+    background: color-mix(in srgb, var(--primary, #6366f1) 85%, #000);
+    transform: translateX(1px);
+}
+.onboarding-view-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    color: var(--muted-foreground, #9ca3af);
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+.onboarding-view-btn:hover {
+    background: var(--muted, #f3f4f6);
+    color: var(--foreground, #111);
+}
+
+/* Footer */
+.onboarding-footer {
+    margin-top: 16px;
+    display: flex;
+    justify-content: flex-end;
+}
+.onboarding-skip-all-btn {
+    background: none;
+    border: none;
+    font-size: 0.82rem;
+    color: var(--muted-foreground, #9ca3af);
+    cursor: pointer;
+    padding: 4px 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s;
+}
+.onboarding-skip-all-btn:hover { color: var(--foreground, #111); }
+
+/* All-done banner */
+.onboarding-all-done-banner {
+    text-align: center;
+    padding: 18px 0 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #22c55e;
+    animation: fade-in-up 0.5s ease both;
+}
+@@keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+</style>
+
+@Html.AntiForgeryToken()
+
+<script>
+(function () {
+    /* ── helpers ─────────────────────────────────────────────── */
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+    async function postJson(url, body) {
+        const fd = new FormData();
+        fd.append('__RequestVerificationToken', token);
+        if (body) Object.entries(body).forEach(([k, v]) => fd.append(k, v));
+        const res = await fetch(url, { method: 'POST', body: fd });
+        return res.ok;
+    }
+
+    function getLiveCount() {
+        return document.querySelectorAll('.onboarding-task:not(.onboarding-task--done)').length;
+    }
+
+    function updateProgress() {
+        const total  = document.querySelectorAll('.onboarding-task').length;
+        const done   = document.querySelectorAll('.onboarding-task.onboarding-task--done').length;
+        const pct    = Math.round(done / total * 100);
+        document.getElementById('onboarding-progress-fill').style.width = pct + '%';
+        document.querySelector('.onboarding-progress-label').textContent = done + ' / ' + total;
+        if (done === total) triggerAllDone();
+    }
+
+    function markTaskDone(taskId) {
+        const row = document.getElementById('task-row-' + taskId);
+        if (!row || row.classList.contains('onboarding-task--done')) return;
+
+        // Swap check icon
+        const checkWrap = document.getElementById('check-' + taskId);
+        checkWrap.innerHTML = `<svg class="onboarding-check-svg onboarding-check-svg--done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>`;
+
+        // Remove action buttons, add view link
+        const actions = row.querySelector('.onboarding-task-actions');
+        if (actions) actions.remove();
+
+        // Strike label
+        row.querySelector('.onboarding-task-label').style.textDecoration = 'line-through';
+        row.querySelector('.onboarding-task-label').style.color = 'var(--muted-foreground, #9ca3af)';
+
+        // Animate row
+        row.classList.add('onboarding-task--completing');
+        setTimeout(() => {
+            row.classList.remove('onboarding-task--completing');
+            row.classList.add('onboarding-task--done');
+        }, 500);
+
+        updateProgress();
+    }
+
+    /* ── confetti ────────────────────────────────────────────── */
+    function triggerAllDone() {
+        // Hide skip-all button / footer
+        const footer = document.querySelector('.onboarding-footer');
+        if (footer) footer.remove();
+
+        // Add celebratory banner
+        const tasksEl = document.getElementById('onboarding-tasks-list');
+        if (tasksEl && !document.querySelector('.onboarding-all-done-banner')) {
+            tasksEl.insertAdjacentHTML('afterend', '<div class="onboarding-all-done-banner">🎉 All done! Your blog is ready to go.</div>');
+        }
+
+        // Lightweight canvas confetti
+        const canvas = document.getElementById('onboarding-confetti-canvas');
+        canvas.style.display = 'block';
+        const ctx = canvas.getContext('2d');
+        canvas.width  = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const COLORS = ['#6366f1','#a78bfa','#38bdf8','#22c55e','#fbbf24','#f472b6'];
+        const pieces = Array.from({ length: 120 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * -canvas.height,
+            r: Math.random() * 7 + 3,
+            c: COLORS[Math.floor(Math.random() * COLORS.length)],
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 4 + 2,
+            va: (Math.random() - 0.5) * 0.2,
+            angle: Math.random() * Math.PI * 2,
+        }));
+
+        let frame;
+        let startTime = null;
+        function animate(ts) {
+            if (!startTime) startTime = ts;
+            if (ts - startTime > 3500) { canvas.style.display = 'none'; return; }
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            pieces.forEach(p => {
+                p.x += p.vx; p.y += p.vy; p.angle += p.va;
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.angle);
+                ctx.fillStyle = p.c;
+                ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 0.5);
+                ctx.restore();
+                if (p.y > canvas.height) { p.y = -10; p.x = Math.random() * canvas.width; }
+            });
+            frame = requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+        setTimeout(() => { cancelAnimationFrame(frame); canvas.style.display = 'none'; }, 3600);
+    }
+
+    /* ── animate progress on load ────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () {
+            const fill   = document.getElementById('onboarding-progress-fill');
+            const target = fill?.dataset.target;
+            if (fill && target) fill.style.width = target;
+        }, 200);
+    });
+
+    /* ── DISMISS ─────────────────────────────────────────────── */
+    document.getElementById('onboarding-dismiss-btn')?.addEventListener('click', async function () {
+        const ok = await postJson('/admin/dashboard/onboarding/dismiss');
+        if (ok) {
+            const panel = document.getElementById('onboarding-panel');
+            panel.classList.add('onboarding-panel--exit');
+            panel.addEventListener('animationend', () => panel.remove(), { once: true });
+        }
+    });
+
+    /* ── SKIP individual task ────────────────────────────────── */
+    document.querySelectorAll('.onboarding-skip-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const taskId = this.dataset.taskId;
+            btn.disabled = true;
+            btn.textContent = '…';
+            const ok = await postJson('/admin/dashboard/onboarding/complete-task', { taskId });
+            if (ok) {
+                markTaskDone(taskId);
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'Skip';
+            }
+        });
+    });
+
+    /* ── SKIP ALL ────────────────────────────────────────────── */
+    document.getElementById('onboarding-skip-all-btn')?.addEventListener('click', async function () {
+        this.disabled = true;
+        this.textContent = 'Skipping…';
+        const pending = [...document.querySelectorAll('.onboarding-task:not(.onboarding-task--done)')];
+        for (const row of pending) {
+            const taskId = row.dataset.taskId;
+            await postJson('/admin/dashboard/onboarding/complete-task', { taskId });
+            markTaskDone(taskId);
+            await new Promise(r => setTimeout(r, 180)); // stagger for visual delight
+        }
+    });
+
+})();
+</script>

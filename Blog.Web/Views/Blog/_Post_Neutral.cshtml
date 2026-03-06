@@ -1,0 +1,90 @@
+@model Blog.Core.Domain.Post
+@{
+    var blogLayout = (string)(ViewBag.BlogLayout ?? "Neutral");
+}
+
+<!-- Neutral layout: dashed borders, sidebar, classic structure -->
+<div class="container xl:max-w-6xl mx-auto px-4 py-6 lg:py-10">
+
+    <!-- Breadcrumb -->
+    <div class="flex items-center gap-2 text-sm mb-6" style="color: var(--muted-foreground);">
+        <a href="/" class="hover:opacity-80">Home</a>
+        <i class="bi bi-chevron-right text-xs"></i>
+        @if (Model.Categories.Any())
+        {
+            <a href="/?category=@Model.Categories.First().Slug" class="hover:opacity-80">@Model.Categories.First().Name</a>
+            <i class="bi bi-chevron-right text-xs"></i>
+        }
+        <span>@Model.Title</span>
+    </div>
+
+    <!-- Main Article -->
+    <article class="max-w-4xl mx-auto w-full">
+            <!-- Header -->
+            <header class="mb-8">
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @foreach (var cat in Model.Categories)
+                    {
+                        <a href="/?category=@cat.Slug" class="text-xs uppercase font-bold px-3 py-1 border border-dashed hover:opacity-80" style="border-color: var(--border); background: var(--muted);">@cat.Name</a>
+                    }
+                </div>
+
+                <h1 class="text-3xl md:text-4xl font-medium mb-4 leading-tight">@Model.Title</h1>
+
+                <div class="flex items-center gap-4 text-sm border-b border-dashed pb-4" style="color: var(--muted-foreground); border-color: var(--border);">
+                    <div class="flex items-center gap-2">
+                        @{
+                            var pAuthorImage = !string.IsNullOrEmpty(Model.AvatarUrl)
+                                ? Model.AvatarUrl
+                                : $"https://api.dicebear.com/9.x/initials/webp?seed={System.Net.WebUtility.UrlEncode(string.IsNullOrEmpty(Model.AuthorName) ? "A" : Model.AuthorName)}&backgroundColor=e5e5e5";
+                        }
+                        <img src="@pAuthorImage" alt="@Model.AuthorName" class="w-8 h-8 rounded-full object-cover" />
+                        <span class="font-medium" style="color: var(--foreground);">@(string.IsNullOrEmpty(Model.AuthorName) ? "Anonymous" : Model.AuthorName)</span>
+                    </div>
+                    <span>•</span>
+                    <time datetime="@Model.PublishedAt?.ToString("yyyy-MM-dd")">
+                        <i class="bi bi-calendar me-1"></i>@Model.PublishedAt?.ToString("MMMM d, yyyy")
+                    </time>
+                    <span>•</span>
+                    <span><i class="bi bi-eye me-1"></i>@Model.ViewCount views</span>
+                </div>
+            </header>
+
+            <!-- Featured Image -->
+            @if (!string.IsNullOrEmpty(Model.FeatureImage))
+            {
+                <div class="mb-8 overflow-hidden">
+                    <img src="@Model.FeatureImage" alt="@Model.Title" class="w-full h-auto object-cover" />
+                </div>
+            }
+
+            <!-- Post Content -->
+            <div class="post-prose mb-8" style="font-family: var(--font-body); line-height: 1.8;">
+                @Html.Raw(Model.Html)
+            </div>
+
+            <!-- Tags -->
+            @if (Model.Tags.Any())
+            {
+                <div class="pt-6 border-t border-dashed" style="border-color: var(--border);">
+                    <h4 class="text-sm font-medium mb-3" style="color: var(--muted-foreground);">
+                        <i class="bi bi-tags me-1"></i>Tags
+                    </h4>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (var tag in Model.Tags)
+                        {
+                            <a href="/?tags=@tag.Slug" class="py-1 px-3 text-sm border hover:opacity-80" style="background: var(--background); border-color: var(--border);">@tag.Name</a>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Share -->
+            <div class="flex items-center gap-3 mt-6 pt-6 border-t border-dashed" style="border-color: var(--border);">
+                <span class="text-sm font-medium" style="color: var(--muted-foreground);">Share:</span>
+                <a href="https://twitter.com/intent/tweet?url=@Uri.EscapeDataString(Context.Request.Scheme + "://" + Context.Request.Host + "/" + Model.Slug)&text=@Uri.EscapeDataString(Model.Title)" target="_blank" class="p-2 hover:opacity-70"><i class="bi bi-twitter-x"></i></a>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=@Uri.EscapeDataString(Context.Request.Scheme + "://" + Context.Request.Host + "/" + Model.Slug)" target="_blank" class="p-2 hover:opacity-70"><i class="bi bi-facebook"></i></a>
+                <a href="https://www.linkedin.com/shareArticle?mini=true&url=@Uri.EscapeDataString(Context.Request.Scheme + "://" + Context.Request.Host + "/" + Model.Slug)&title=@Uri.EscapeDataString(Model.Title)" target="_blank" class="p-2 hover:opacity-70"><i class="bi bi-linkedin"></i></a>
+            </div>
+        </article>
+</div>

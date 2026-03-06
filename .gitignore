@@ -1,0 +1,38 @@
+# Visual Studio and .NET build folders
+.vs/
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+
+# Application Configuration and Secrets
+appsettings.json
+appsettings.Development.json
+appsettings.*.json
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+
+# AI Agent, GSD Methodology, and Scripts
+.gsd/
+.agent/
+.gemini/
+GSD-STYLE.md
+PROJECT_RULES.md
+adapters/
+docs/
+scripts/
+model_capabilities.yaml
+
+# Node Modules (if frontend assets exist)
+node_modules/
+package-lock.json
+
+# SVN / Git overlaps
+.svn/
+
+# Uploads and temporary media
+Blog.Web/wwwroot/uploads/**/*
+!Blog.Web/wwwroot/uploads/**/.gitkeep

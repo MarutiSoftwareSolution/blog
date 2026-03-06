@@ -1,0 +1,174 @@
+@inject Blog.Core.Interfaces.ICustomThemeSettingRepository ThemeSettingsRepo
+@inject Blog.Core.Interfaces.ISettingRepository SettingsRepo
+@inject Blog.Core.Interfaces.ITenantContext TenantContext
+@inject Blog.Core.Interfaces.IUserRepository UserRepo
+@using System.Security.Claims
+@{
+    Guid contentId = Guid.Empty;
+    if (TenantContext.IsCloudMode)
+    {
+        if (TenantContext.IsResolved)
+        {
+            contentId = TenantContext.UserId;
+        }
+        else if (Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id))
+        {
+            contentId = id;
+        }
+    }
+    
+    if (contentId == Guid.Empty)
+    {
+        var admin = await UserRepo.GetFirstAdminAsync();
+        contentId = admin?.Id ?? Guid.Empty;
+    }
+    
+    Guid brandingId = contentId;
+
+    var themeSettings = await ThemeSettingsRepo.GetAllAsync(brandingId);
+    var themeDict = themeSettings.ToDictionary(s => s.SettingKey, s => s.EffectiveValue);
+
+    string GetTheme(string key, string fallback) => themeDict.TryGetValue(key, out var v) ? v : fallback;
+
+    var fontHeading = GetTheme("font-heading", "Inter");
+    var fontBody = GetTheme("font-body", "Inter");
+    var fontsToLoad = new HashSet<string> { fontHeading, fontBody, "Inter" };
+
+    var userSettings = await SettingsRepo.GetSettingsAsync(brandingId);
+    var siteName = userSettings.SiteName;
+    var siteDescription = userSettings.SiteDescription;
+    
+    var globalSettings = await SettingsRepo.GetSettingsAsync(brandingId);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <meta name="description" content="@ViewData["Description"]" />
+    @if (!string.IsNullOrEmpty(globalSettings.SiteFaviconUrl))
+    {
+        <link rel="icon" type="image/x-icon" href="@globalSettings.SiteFaviconUrl" />
+    }
+    @await RenderSectionAsync("MetaTags", required: false)
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    @foreach (var font in fontsToLoad)
+    {
+        var fontParam = font.Replace(" ", "+");
+        <link href="https://fonts.googleapis.com/css2?family=@(fontParam):wght@400;500;700;900&display=swap" rel="stylesheet" />
+    }
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['@fontHeading', 'Inter', 'sans-serif'],
+                        body: ['@fontBody', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        neutral: {
+                            50: 'color-mix(in srgb, var(--background) 95%, var(--foreground) 5%)',
+                            100: 'color-mix(in srgb, var(--muted) 100%, transparent)',
+                            200: 'var(--border)',
+                            500: 'var(--muted-foreground)',
+                            700: 'var(--foreground)',
+                            900: 'color-mix(in srgb, var(--foreground) 95%, black 5%)',
+                        },
+                        primary: 'var(--primary)',
+                        'primary-foreground': 'var(--primary-foreground)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Theme CSS Variables -->
+    @if (themeSettings.Any())
+    {
+        <style>
+            :root {
+                @foreach (var s in themeSettings.Where(s => s.SettingGroup == "colors"))
+                {
+                    @:--@(s.SettingKey): @(s.EffectiveValue);
+                }
+                --font-sans: '@fontHeading', sans-serif;
+                --font-body: '@fontBody', sans-serif;
+                --radius: @(GetTheme("border-radius", "0.5rem"));
+            }
+        </style>
+    }
+    else
+    {
+        <style>
+            :root {
+                --background: #ffffff; --foreground: #404040; --primary: #404040; --primary-foreground: #ffffff;
+                --secondary: #f5f5f5; --secondary-foreground: #404040; --muted: #f5f5f5; --muted-foreground: #737373;
+                --accent: #e5e5e5; --accent-foreground: #262626; --card: #ffffff; --card-foreground: #404040;
+                --border: #e5e5e5; --destructive: #dc2626;
+                --font-sans: 'Inter', sans-serif; --font-body: 'Inter', sans-serif; --radius: 0;
+            }
+        </style>
+    }
+
+    <!-- Theme + Custom Styles -->
+    <link rel="stylesheet" href="~/css/neutral-blog.css" asp-append-version="true" />
+
+    <!-- Highlight.js for code blocks -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed" />
+</head>
+
+<body class="font-sans" style="color: var(--foreground); background: var(--background);">
+
+    <!-- Header -->
+    <div class="relative z-50">
+        @await Component.InvokeAsync("Navbar", new { ownerId = brandingId })
+    </div>
+
+    <!-- Main Content -->
+    <main class="relative">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    @await Component.InvokeAsync("Footer", new { ownerId = brandingId })
+
+    <!-- Scroll to Top -->
+    <a href="#" id="backToTop" class="back-top fixed py-2 px-3 border border-dashed end-4 bottom-4" style="background: var(--muted); border-color: var(--border); color: var(--muted-foreground);" aria-label="Scroll To Top">
+        <i class="bi bi-arrow-up"></i>
+    </a>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script>
+        // Scroll to top
+        (function () {
+            var btn = document.getElementById('backToTop');
+            if (!btn) return;
+            window.addEventListener('scroll', function () {
+                btn.classList.toggle('show', window.scrollY > 300);
+            });
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        })();
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

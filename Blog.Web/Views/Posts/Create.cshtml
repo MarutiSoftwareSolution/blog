@@ -1,0 +1,524 @@
+@model Blog.Core.Domain.Post
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "New Post";
+    var formAction = "/admin/posts/create";
+}
+
+<div class="h-[calc(100vh-8rem)] flex flex-col">
+    <form method="post" action="@formAction" id="postForm" class="flex-1 flex flex-col h-full">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Html" id="postContent" />
+        <input type="hidden" name="Plaintext" id="postPlaintext" />
+
+        <!-- Toolbar -->
+        <div class="flex items-center justify-between mb-4 gap-4">
+            <div class="flex items-center gap-4">
+                <a href="/admin/posts" class="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 text-sm font-medium">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                    Back
+                </a>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="submit" name="submitAction" value="draft" class="px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors">
+                    Save Draft
+                </button>
+                <button type="button" id="publishBtn" class="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium shadow-sm transition-colors">
+                    Publish
+                </button>
+                <button type="button" onclick="document.getElementById('settingsPanel').classList.toggle('hidden')" class="md:hidden px-3 py-2 border border-input rounded-md">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="flex-1 flex gap-6 overflow-hidden">
+            <!-- Main Editor -->
+            <div class="flex-1 flex flex-col bg-card rounded-lg shadow-sm border border-border overflow-hidden">
+                <input type="text" name="Title" id="postTitle" value="@Model.Title" placeholder="Post Title" 
+                       class="w-full px-6 py-4 text-3xl font-bold bg-transparent focus:outline-none placeholder:text-muted/50 border-b border-border" />
+                
+                <div id="editor-container" class="flex-1 overflow-hidden relative">
+                    <div id="quill-editor" class="h-full"></div>
+                </div>
+            </div>
+
+            <!-- Sidebar Settings -->
+            <aside id="settingsPanel" class="hidden md:block w-80 bg-card border border-border rounded-lg shadow-sm overflow-y-auto p-4 shrink-0 transition-all">
+                <h3 class="font-semibold mb-4 text-lg">Post Settings</h3>
+                
+                <div class="space-y-4">
+                    <!-- Slug -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1">URL Slug</label>
+                        <input type="text" name="Slug" id="slugInput" value="@Model.Slug" placeholder="auto-generated" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                    </div>
+
+                    <!-- Summary -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Summary (Meta)</label>
+                        <textarea name="MetaDescription" rows="3" placeholder="Short description..." class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none">@Model.MetaDescription</textarea>
+                    </div>
+
+                    <!-- Categories -->
+                    <div x-data="categoryDropdown()" class="relative mb-4">
+                        <label class="block text-sm font-medium mb-2">Categories</label>
+                        
+                        <!-- Hidden Select for Form Submission -->
+                        <select name="categoryIds" multiple hidden>
+                            <template x-for="id in selected">
+                                <option :value="id" selected></option>
+                            </template>
+                        </select>
+
+                        <!-- Trigger -->
+                        <div @@click="open = !open" @@click.outside="open = false" 
+                             class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm min-h-[42px] cursor-pointer flex flex-wrap gap-2 items-center">
+                            <template x-if="selected.length === 0">
+                                <span class="text-muted-foreground">Select categories...</span>
+                            </template>
+                            <template x-for="id in selected" :key="id">
+                                <span class="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-medium border border-primary/20 flex items-center gap-1">
+                                    <span x-text="items.find(x => x.Id === id)?.Name || 'Unknown'"></span>
+                                    <button type="button" @@click.stop="toggle(id)" class="hover:text-primary-foreground hover:bg-primary rounded-full p-0.5 transition-colors">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <div x-show="open" x-transition 
+                             class="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-64 overflow-hidden flex flex-col">
+                            <div class="p-2 border-b border-border">
+                                <input x-model="search" type="text" placeholder="Search categories..." class="w-full px-2 py-1 text-sm bg-muted/50 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                            </div>
+                            <div class="overflow-y-auto flex-1 p-1">
+                                <template x-for="item in filteredItems" :key="item.Id">
+                                    <div @@click="toggle(item.Id)" class="flex items-center gap-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer text-sm">
+                                        <div class="w-4 h-4 rounded border border-input flex items-center justify-center" :class="selected.includes(item.Id) ? 'bg-primary border-primary text-primary-foreground' : ''">
+                                            <svg x-show="selected.includes(item.Id)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span x-text="item.Name"></span>
+                                    </div>
+                                </template>
+                                <template x-if="filteredItems.length === 0">
+                                    <div class="p-2 text-xs text-muted-foreground text-center">No categories found.</div>
+                                </template>
+                            </div>
+                            <div class="p-2 border-t border-border bg-muted/30">
+                                <a href="/admin/categories" target="_blank" class="group flex items-center justify-between px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground">
+                                    Manage Categories
+                                    <div class="w-5 h-5 rounded border border-input flex items-center justify-center bg-background shrink-0 text-muted-foreground group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all duration-200">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tags -->
+                    <div x-data="tagDropdown()" class="relative mb-4">
+                        <label class="block text-sm font-medium mb-2">Tags</label>
+                        
+                        <!-- Hidden Input for Form Submission -->
+                        <input type="hidden" name="tagNames" :value="selected.join(',')">
+
+                        <!-- Trigger -->
+                        <div @@click="open = !open" @@click.outside="open = false" 
+                             class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm min-h-[42px] cursor-pointer flex flex-wrap gap-2 items-center">
+                            <template x-if="selected.length === 0">
+                                <span class="text-muted-foreground">Select tags...</span>
+                            </template>
+                            <template x-for="tag in selected" :key="tag">
+                                <span class="bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-xs font-medium border border-border flex items-center gap-1">
+                                    <span x-text="tag"></span>
+                                    <button type="button" @@click.stop="toggle(tag)" class="hover:text-destructive transition-colors">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    </button>
+                                </span>
+                            </template>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <div x-show="open" x-transition 
+                             class="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-64 overflow-hidden flex flex-col">
+                            <div class="p-2 border-b border-border">
+                                <input x-model="search" @@keydown.enter.prevent="addTag()" type="text" placeholder="Search or type new tag..." class="w-full px-2 py-1 text-sm bg-muted/50 rounded-md focus:outline-none focus:ring-1 focus:ring-primary">
+                                <div x-show="search && !items.find(x => x.Name.toLowerCase() === search.toLowerCase())" class="mt-2">
+                                     <button type="button" @@click="addTag()" class="w-full text-left text-xs text-primary hover:underline font-medium">
+                                        + Create tag: "<span x-text="search"></span>"
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="overflow-y-auto flex-1 p-1">
+                                <template x-for="item in filteredItems" :key="item.Id">
+                                    <div @@click="toggle(item.Name)" class="flex items-center gap-2 px-2 py-1.5 hover:bg-accent hover:text-accent-foreground rounded-sm cursor-pointer text-sm">
+                                        <div class="w-4 h-4 rounded border border-input flex items-center justify-center" :class="selected.includes(item.Name) ? 'bg-primary border-primary text-primary-foreground' : ''">
+                                            <svg x-show="selected.includes(item.Name)" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                        </div>
+                                        <span x-text="item.Name"></span>
+                                    </div>
+                                </template>
+                                <template x-if="filteredItems.length === 0">
+                                    <div class="p-2 text-xs text-muted-foreground text-center" x-show="!search">No tags found.</div>
+                                </template>
+                            </div>
+                            <div class="p-2 border-t border-border bg-muted/30">
+                                <a href="/admin/tags" target="_blank" class="group flex items-center justify-between px-2 py-1.5 text-xs font-medium rounded-md transition-colors text-muted-foreground hover:text-foreground">
+                                    Manage Tags
+                                    <div class="w-5 h-5 rounded border border-input flex items-center justify-center bg-background shrink-0 text-muted-foreground group-hover:bg-primary group-hover:border-primary group-hover:text-primary-foreground transition-all duration-200">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Scheduling -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Schedule Publish</label>
+                        <input type="datetime-local" name="ScheduledAt" value="@(Model.ScheduledAt?.ToString("yyyy-MM-ddTHH:mm"))" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring text-muted-foreground" />
+                        <p class="text-xs text-muted-foreground mt-1">Leave blank to publish immediately.</p>
+                    </div>
+
+                    <!-- Comments Toggle -->
+                    <div class="flex items-center justify-between">
+                        <label class="text-sm font-medium">Allow Comments</label>
+                        <input type="checkbox" name="AllowComments" value="true" @(Model.AllowComments ? "checked" : "") class="rounded border-input text-primary focus:ring-primary h-5 w-5" />
+                    </div>
+                    <!-- SEO & Social settings -->
+                    <div x-data="{ seoOpen: false }" class="border-t border-border pt-4 mt-4">
+                        <button type="button" @@click="seoOpen = !seoOpen" class="flex items-center justify-between w-full text-left font-medium text-sm">
+                            <span>SEO & Social</span>
+                            <svg :class="seoOpen ? 'rotate-180' : ''" class="transition-transform" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div x-show="seoOpen" x-transition class="space-y-4 pt-4">
+                            <div>
+                                <label class="block text-xs font-medium mb-1">Meta Title</label>
+                                <input type="text" name="MetaTitle" value="@Model.MetaTitle" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium mb-1">Canonical URL</label>
+                                <input type="text" name="CanonicalUrl" value="@Model.CanonicalUrl" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted/50" placeholder="https://" />
+                            </div>
+                            
+                            <!-- Open Graph -->
+                            <div class="border-t border-border pt-3 mt-3">
+                                <label class="block text-xs font-semibold text-muted-foreground uppercase mb-2">Open Graph (FB)</label>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">OG Title</label>
+                                        <input type="text" name="OgTitle" value="@Model.OgTitle" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">OG Description</label>
+                                        <textarea name="OgDescription" rows="2" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none">@Model.OgDescription</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">OG Image</label>
+                                        <input type="hidden" name="OgImage" id="OgImageInput" />
+                                        <img id="OgImagePreview" src="" class="mt-2 mb-2 w-full h-auto rounded border hidden" />
+                                        <button type="button" 
+                                                onclick="window.dispatchEvent(new CustomEvent('open-media-selector', { detail: { targetInput: 'OgImageInput', previewImg: 'OgImagePreview', folder: 'og' } }))" 
+                                                class="w-full px-3 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2">
+                                            Select OG Image
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Twitter -->
+                            <div class="border-t border-border pt-3 mt-3">
+                                <label class="block text-xs font-semibold text-muted-foreground uppercase mb-2">Twitter Card</label>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">Twitter Title</label>
+                                        <input type="text" name="TwitterTitle" value="@Model.TwitterTitle" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">Twitter Description</label>
+                                        <textarea name="TwitterDescription" rows="2" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none">@Model.TwitterDescription</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium mb-1">Twitter Image</label>
+                                        <input type="hidden" name="TwitterImage" id="TwitterImageInput" />
+                                        <img id="TwitterImagePreview" src="" class="mt-2 mb-2 w-full h-auto rounded border hidden" />
+                                        <button type="button" 
+                                                onclick="window.dispatchEvent(new CustomEvent('open-media-selector', { detail: { targetInput: 'TwitterImageInput', previewImg: 'TwitterImagePreview', folder: 'twitter' } }))" 
+                                                class="w-full px-3 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-2">
+                                            Select Twitter Image
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Featured Image -->
+                    <div class="pt-4 border-t border-border">
+                        <label class="block text-sm font-medium mb-2">Featured Image</label>
+                        <input type="hidden" name="FeatureImage" id="FeaturedImageUrlInput" value="@Model.FeatureImage" />
+                        
+                        <div class="mt-2 text-center">
+                            <img id="FeaturedImagePreview" src="@Model.FeatureImage" alt="Featured Image Preview" class="w-full h-auto rounded-md mb-3 border border-border @(string.IsNullOrEmpty(Model.FeatureImage) ? "hidden" : "")" />
+                            
+                            <button type="button" 
+                                    onclick="window.dispatchEvent(new CustomEvent('open-media-selector', { detail: { targetInput: 'FeaturedImageUrlInput', previewImg: 'FeaturedImagePreview' } }))" 
+                                    class="w-full px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                Select Image
+                            </button>
+                            <button type="button" 
+                                    onclick="document.getElementById('FeaturedImageUrlInput').value = ''; document.getElementById('FeaturedImagePreview').classList.add('hidden'); this.classList.add('hidden');" 
+                                    class="mt-2 text-xs text-destructive hover:underline @(string.IsNullOrEmpty(Model.FeatureImage) ? "hidden" : "")"
+                                    id="RemoveFeaturedImageBtn">
+                                Remove Image
+                            </button>
+                        </div>
+                    </div>
+
+
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+
+<partial name="_MediaSelectorModal" />
+<partial name="_SlashCommandMenu" />
+
+
+<!-- Publish Modal -->
+<div id="publishModal" class="fixed inset-0 z-50 hidden bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-card w-full max-w-sm rounded-lg shadow-lg border border-border p-6 transform transition-all scale-100">
+        <h3 id="modalTitle" class="text-lg font-semibold mb-2">Ready to publish?</h3>
+        <p id="modalDesc" class="text-muted-foreground mb-6">This will make your post publicly visible to all visitors.</p>
+        <div class="flex justify-end gap-3">
+            <button type="button" onclick="document.getElementById('publishModal').classList.add('hidden')" class="px-4 py-2 border border-input hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors">Cancel</button>
+            <button type="button" id="modalConfirmBtn" onclick="confirmPublish()" class="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium shadow-sm transition-colors">Confirm Publish</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_QuillEditorScripts" />
+    <script>
+        // Global Data
+        window.categoriesData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Categories ?? new List<Blog.Core.Domain.Category>()));
+        window.selectedCategoryIds = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SelectedCategoryIds ?? new List<Guid>()));
+
+        window.tagsData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Tags ?? new List<Blog.Core.Domain.Tag>()));
+        window.selectedTagNames = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(((string)ViewBag.SelectedTagNames ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim()).ToList()));
+
+        // Alpine Components
+        function categoryDropdown() {
+            return {
+                open: false,
+                search: '',
+                items: window.categoriesData,
+                selected: window.selectedCategoryIds,
+                get filteredItems() {
+                    return this.items.filter(i => i.Name.toLowerCase().includes(this.search.toLowerCase()))
+                },
+                toggle(id) {
+                    if (this.selected.includes(id)) {
+                        this.selected = this.selected.filter(x => x !== id);
+                    } else {
+                        this.selected.push(id);
+                    }
+                }
+            }
+        }
+
+        function tagDropdown() {
+            return {
+                open: false,
+                search: '',
+                items: window.tagsData,
+                selected: window.selectedTagNames,
+                get filteredItems() {
+                    return this.items.filter(i => i.Name.toLowerCase().includes(this.search.toLowerCase()))
+                },
+                toggle(name) {
+                    if (this.selected.includes(name)) {
+                        this.selected = this.selected.filter(x => x !== name);
+                    } else {
+                        this.selected.push(name);
+                    }
+                },
+                addTag() {
+                    const val = this.search.trim();
+                    if (val && !this.selected.includes(val)) {
+                        this.selected.push(val);
+                        this.search = '';
+                    }
+                }
+            }
+        }
+
+        var quill = initQuill('#quill-editor', 'postContent');
+
+
+        // Auto Slug (Kebab-case)
+        document.getElementById('postTitle').addEventListener('input', function() {
+            const slugInput = document.getElementById('slugInput');
+            const slug = this.value.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/[\s_]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+            slugInput.value = slug;
+        });
+
+        document.getElementById('slugInput').addEventListener('input', function() {
+             this.value = this.value.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/[\s_]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '');
+        });
+
+        // Publish logic
+        var publishBtn = document.getElementById('publishBtn');
+        var scheduleInput = document.querySelector('input[name="ScheduledAt"]');
+        var modalTitle = document.getElementById('modalTitle');
+        var modalDesc = document.getElementById('modalDesc');
+        var modalConfirmBtn = document.getElementById('modalConfirmBtn');
+
+        function updatePublishButton() {
+            if (scheduleInput && scheduleInput.value) {
+                var selectedDate = new Date(scheduleInput.value);
+                if (selectedDate > new Date()) {
+                    if (publishBtn) publishBtn.innerText = 'Schedule';
+                    if (modalTitle) modalTitle.innerText = 'Ready to schedule?';
+                    if (modalDesc) modalDesc.innerText = 'This will schedule your post to be published automatically at the selected time.';
+                    if (modalConfirmBtn) modalConfirmBtn.innerText = 'Confirm Schedule';
+                    return;
+                }
+            }
+            if (publishBtn) publishBtn.innerText = 'Publish';
+            if (modalTitle) modalTitle.innerText = 'Ready to publish?';
+            if (modalDesc) modalDesc.innerText = 'This will make your post publicly visible to all visitors.';
+            if (modalConfirmBtn) modalConfirmBtn.innerText = 'Confirm Publish';
+        }
+
+        if (scheduleInput) {
+            scheduleInput.addEventListener('input', updatePublishButton);
+            updatePublishButton();
+        }
+
+        if (publishBtn) {
+            publishBtn.addEventListener('click', function() {
+                document.getElementById('publishModal').classList.remove('hidden');
+            });
+        }
+
+        window.confirmPublish = async function() {
+             document.getElementById('postContent').value = quill.root.innerHTML;
+             document.getElementById('postPlaintext').value = quill.getText();
+             
+             if (modalConfirmBtn) {
+                 modalConfirmBtn.disabled = true;
+                 modalConfirmBtn.innerText = 'Publishing...';
+             }
+             await uploadPendingImages();
+
+             var form = document.getElementById('postForm');
+             var existingAction = form.querySelector('input[name="submitAction"]');
+             if (existingAction) {
+                 existingAction.value = 'publish';
+             } else {
+                 var input = document.createElement('input');
+                 input.type = 'hidden';
+                 input.name = 'submitAction';
+                 input.value = 'publish';
+                 form.appendChild(input);
+             }
+             form.submit();
+        }
+
+        // Intercept Draft Save too
+        document.querySelector('button[value="draft"]').addEventListener('click', async function(e) {
+            e.preventDefault();
+            this.innerText = 'Saving...';
+            this.disabled = true;
+            document.getElementById('postContent').value = quill.root.innerHTML;
+            document.getElementById('postPlaintext').value = quill.getText();
+            
+            await uploadPendingImages();
+
+            var form = document.getElementById('postForm');
+            var existingAction = form.querySelector('input[name="submitAction"]');
+            if (existingAction) {
+                existingAction.value = 'draft';
+            } else {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'submitAction';
+                input.value = 'draft';
+                form.appendChild(input);
+            }
+            form.submit();
+        });
+
+        // Preview Image client-side instantly
+        window.previewImage = function(inputElem, previewImgId) {
+            if (inputElem.files && inputElem.files[0]) {
+                var img = document.getElementById(previewImgId);
+                img.src = URL.createObjectURL(inputElem.files[0]);
+                img.classList.remove('hidden');
+            }
+        }
+
+        // Helper: perform direct upload via fetch and return URL
+        async function directUploadAsync(file, folder) {
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('folder', folder);
+
+            var token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            if (token) {
+                formData.append('__RequestVerificationToken', token);
+            }
+
+            try {
+                const response = await fetch('/admin/media/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.url;
+                }
+            } catch (error) {
+                console.error('Error uploading image:', error);
+            }
+            return null;
+        }
+
+        // Handle Pending Direct Uploads for OG and Twitter Images before Submit
+        window.uploadPendingImages = async function() {
+            var ogInputElem = document.getElementById('OgImageUpload');
+            if (ogInputElem && ogInputElem.files && ogInputElem.files[0]) {
+                var url = await directUploadAsync(ogInputElem.files[0], 'og');
+                if (url) {
+                    document.getElementById('OgImageInput').value = url;
+                }
+            }
+
+            var twInputElem = document.getElementById('TwitterImageUpload');
+            if (twInputElem && twInputElem.files && twInputElem.files[0]) {
+                var url = await directUploadAsync(twInputElem.files[0], 'twitter');
+                if (url) {
+                    document.getElementById('TwitterImageInput').value = url;
+                }
+            }
+        }
+        
+        // Handle Media Selection Event
+        window.addEventListener('media-selected', function(e) {
+            document.getElementById('RemoveFeaturedImageBtn').classList.remove('hidden');
+        });
+    </script>
+}

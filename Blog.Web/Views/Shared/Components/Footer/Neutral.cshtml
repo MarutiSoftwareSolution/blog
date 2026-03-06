@@ -1,0 +1,46 @@
+@inject Blog.Core.Interfaces.ISettingRepository SettingsRepo
+@{
+    var userSettings = await SettingsRepo.GetSettingsAsync(ViewBag.OwnerId ?? Guid.Empty);
+    var siteName = userSettings.SiteName;
+    var siteDescription = userSettings.SiteDescription;
+    string twitter   = userSettings.SocialTwitter;
+    string facebook  = userSettings.SocialFacebook;
+    string instagram = userSettings.SocialInstagram;
+    string youtube   = userSettings.SocialYoutube;
+    string linkedin  = userSettings.SocialLinkedin;
+    string github    = userSettings.SocialGithub;
+}
+
+<footer style="background: var(--muted);">
+    @* Upper band: brand + description *@
+    <div class="border-b border-dashed py-10 md:py-14" style="border-color: var(--border);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+            @* Brand *@
+            <div class="flex flex-col gap-3 max-w-sm">
+                <a href="/" class="text-xl font-black tracking-tight hover:opacity-70 transition-opacity uppercase"
+                   style="color: var(--foreground);">@siteName</a>
+                <p class="text-sm leading-relaxed" style="color: var(--muted-foreground);">@siteDescription</p>
+            </div>
+            @* Social icons *@
+            <div class="flex items-center gap-3 flex-wrap">
+                <a href="/feed" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="RSS Feed">
+                    <i class="bi bi-rss-fill text-sm"></i>
+                </a>
+                @if (!string.IsNullOrEmpty(twitter))   { <a href="@twitter"   target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="X / Twitter"><i class="bi bi-twitter-x text-sm"></i></a> }
+                @if (!string.IsNullOrEmpty(facebook))  { <a href="@facebook"  target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="Facebook"><i class="bi bi-facebook text-sm"></i></a> }
+                @if (!string.IsNullOrEmpty(instagram)) { <a href="@instagram" target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="Instagram"><i class="bi bi-instagram text-sm"></i></a> }
+                @if (!string.IsNullOrEmpty(youtube))   { <a href="@youtube"   target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="YouTube"><i class="bi bi-youtube text-sm"></i></a> }
+                @if (!string.IsNullOrEmpty(linkedin))  { <a href="@linkedin"  target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="LinkedIn"><i class="bi bi-linkedin text-sm"></i></a> }
+                @if (!string.IsNullOrEmpty(github))    { <a href="@github"    target="_blank" class="w-9 h-9 flex items-center justify-center border border-dashed hover:opacity-60 transition-opacity" style="border-color: var(--border); color: var(--muted-foreground);" title="GitHub"><i class="bi bi-github text-sm"></i></a> }
+            </div>
+        </div>
+    </div>
+
+    @* Copyright bar *@
+    <div class="py-4 text-xs" style="color: var(--muted-foreground);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-between">
+            <span>Copyright &copy; @DateTime.Now.Year @siteName</span>
+            <a href="/" class="hover:opacity-60 transition-opacity">Home</a>
+        </div>
+    </div>
+</footer>

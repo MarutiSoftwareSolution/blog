@@ -1,0 +1,187 @@
+@using Blog.Core.Interfaces
+@model PagedResult<Blog.Core.Domain.Post>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Posts";
+    var status = ViewBag.Status as string;
+}
+
+<div class="space-y-6">
+    <!-- Header & Filter -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <a href="/admin/posts/create" class="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium text-sm shadow-sm w-full sm:w-auto">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Post
+        </a>
+
+        <form method="get" class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div class="relative">
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Search posts..." class="w-full sm:w-64 px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input pl-9" />
+                <svg class="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </div>
+            
+            <select name="status" class="px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input" onchange="this.form.submit()">
+                <option value="">All Status</option>
+                <!option value="published" @(status == "published" ? "selected" : "")>Published</!option>
+                <!option value="draft" @(status == "draft" ? "selected" : "")>Draft</!option>
+                <!option value="scheduled" @(status == "scheduled" ? "selected" : "")>Scheduled</!option>
+            </select>
+            
+            <button type="submit" class="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/80 transition-colors font-medium text-sm border border-border">Filter</button>
+        </form>
+    </div>
+
+    <!-- Stats for Filter Context (Optional) -->
+    @if (!string.IsNullOrEmpty(ViewBag.Search) || !string.IsNullOrEmpty(status))
+    {
+        <div class="text-sm text-muted-foreground">
+            Showing results for 
+            @if(!string.IsNullOrEmpty(ViewBag.Search)) { <span class="font-medium text-foreground">"@ViewBag.Search"</span> }
+            @if(!string.IsNullOrEmpty(status)) { <span>in <span class="font-medium text-foreground capitalize">@status</span></span> }
+            <a href="/admin/posts" class="ml-2 text-primary hover:underline">Clear filters</a>
+        </div>
+    }
+
+    @if (!Model.Items.Any())
+    {
+        <div class="bg-card rounded-lg border border-border p-12 text-center text-muted-foreground">
+            <div class="bg-muted w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            <h3 class="text-lg font-medium text-foreground mb-1">No posts found</h3>
+            <p class="mb-4">Get started by creating a new post.</p>
+            <a href="/admin/posts/create" class="text-primary hover:underline font-medium">Create your first post →</a>
+        </div>
+    }
+    else
+    {
+        <div class="bg-card rounded-lg border border-border overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-muted text-muted-foreground font-medium border-b border-border">
+                        <tr>
+                            <th class="px-4 py-3">Title</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">Author</th>
+                            <th class="px-4 py-3">Date</th>
+                            <th class="px-4 py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border">
+                        @foreach (var post in Model.Items)
+                        {
+                            <tr class="hover:bg-muted/30 transition-colors group">
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-3">
+                                        @if (!string.IsNullOrEmpty(post.FeatureImage))
+                                        {
+                                            <img src="@post.FeatureImage" alt="" class="w-10 h-10 object-cover rounded border border-border" />
+                                        }
+                                        else
+                                        {
+                                            <div class="w-10 h-10 bg-muted rounded border border-border flex items-center justify-center text-muted-foreground">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l6-6 3 3 9-9"/><path d="M22 6L12 16l-3-3-9 9"/></svg>
+                                            </div>
+                                        }
+                                        <div>
+                                            @if (post.AuthorId == ViewBag.CurrentUserId || ViewBag.IsAdmin || ViewBag.IsEditor)
+                                            {
+                                                <a href="/admin/posts/edit/@post.Id" class="font-medium text-foreground hover:text-primary transition-colors block">@post.Title</a>
+                                            }
+                                            else
+                                            {
+                                                <span class="font-medium text-foreground block">@post.Title</span>
+                                            }
+                                            <div class="text-xs text-muted-foreground flex items-center gap-2">
+                                                <span>@post.ViewCount views</span>
+                                                <span>•</span>
+                                                <span>@post.CommentCount comments</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3">
+                                    @{
+                                        var displayStatus = post.Status;
+                                        if (post.Status == Blog.Core.Domain.PostStatus.Scheduled && post.ScheduledAt <= DateTime.Now)
+                                        {
+                                            displayStatus = Blog.Core.Domain.PostStatus.Published;
+                                        }
+                                    }
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                                        @(displayStatus == Blog.Core.Domain.PostStatus.Published ? "bg-green-100 text-green-800" : 
+                                          displayStatus == Blog.Core.Domain.PostStatus.Draft ? "bg-yellow-100 text-yellow-800" : "bg-blue-100 text-blue-800")">
+                                        @displayStatus
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">
+                                    <div class="flex items-center gap-2">
+                                         <div class="w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-xs font-medium text-secondary-foreground overflow-hidden">
+                                            @{
+                                                var pAuthorImg = !string.IsNullOrEmpty(post.AvatarUrl) 
+                                                    ? post.AvatarUrl 
+                                                    : $"https://api.dicebear.com/9.x/initials/webp?seed={System.Net.WebUtility.UrlEncode(string.IsNullOrEmpty(post.AuthorName) ? "A" : post.AuthorName)}&backgroundColor=000000";
+                                            }
+                                            <img src="@pAuthorImg" alt="@post.AuthorName" class="w-full h-full object-cover" loading="lazy" />
+                                        </div>
+                                        <span>@(string.IsNullOrEmpty(post.AuthorName) ? "Anonymous" : post.AuthorName)</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">
+                                    <span title="@post.CreatedAt">@post.CreatedAt.ToString("MMM d, yyyy")</span>
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <div class="flex items-center justify-end gap-2 transition-opacity">
+                                        @if (post.AuthorId == ViewBag.CurrentUserId || ViewBag.IsAdmin || ViewBag.IsEditor)
+                                        {
+                                            <a href="/admin/posts/edit/@post.Id" class="p-2 text-muted-foreground hover:text-primary transition-colors" title="Edit">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                            </a>
+                                        }
+                                        @if (post.Status == Blog.Core.Domain.PostStatus.Published || (post.Status == Blog.Core.Domain.PostStatus.Scheduled && post.ScheduledAt <= DateTime.Now))
+                                        {
+                                            <a href="/@post.Slug" target="_blank" class="p-2 text-muted-foreground hover:text-green-600 transition-colors" title="View">
+                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            </a>
+                                        }
+                                        @if (post.AuthorId == ViewBag.CurrentUserId || ViewBag.IsAdmin || ViewBag.IsEditor)
+                                        {
+                                            <form method="post" action="/admin/posts/delete/@post.Id" onsubmit="return confirm('Ensure to delete?')" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="p-2 text-muted-foreground hover:text-destructive transition-colors" title="Delete">
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <div class="px-4 py-3 border-t border-border flex items-center justify-between">
+                    <div class="text-sm text-muted-foreground">
+                        Page <span class="font-medium text-foreground">@Model.Page</span> of <span class="font-medium text-foreground">@Model.TotalPages</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <a href="?page=@i&search=@ViewBag.Search&status=@ViewBag.Status"
+                               class="px-3 py-1 text-sm rounded-md border transition-colors
+                               @(i == Model.Page 
+                                   ? "bg-primary text-primary-foreground border-primary" 
+                                   : "bg-background text-foreground border-input hover:bg-accent hover:text-accent-foreground")">
+                                @i
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

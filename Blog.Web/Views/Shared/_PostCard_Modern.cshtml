@@ -1,0 +1,49 @@
+@model Blog.Core.Domain.Post
+
+<article class="group flex flex-col overflow-hidden bg-card border-b-2 hover:-translate-y-1 transition-all duration-300" style="background: var(--card); border-color: var(--primary);">
+    <!-- Thumbnail -->
+    <a href="/@Model.Slug" class="relative overflow-hidden aspect-[16/9]" style="background: var(--muted);">
+        @if (!string.IsNullOrEmpty(Model.FeatureImage))
+        {
+            <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@Model.FeatureImage" alt="@Model.Title" loading="lazy" />
+        }
+        else
+        {
+            <div class="w-full h-full flex items-center justify-center" style="background: var(--muted);">
+                <span class="text-5xl font-black opacity-10" style="color: var(--foreground);">@Model.Title.FirstOrDefault()</span>
+            </div>
+        }
+        @if (Model.Categories.Any())
+        {
+            <span class="absolute top-0 left-0 px-3 py-1 text-xs font-bold uppercase tracking-wider" style="background: var(--primary); color: var(--primary-foreground);">@Model.Categories.First().Name</span>
+        }
+    </a>
+
+    <!-- Content -->
+    <div class="flex flex-col gap-2 p-5 flex-1">
+        <div class="flex items-center gap-2 text-xs" style="color: var(--muted-foreground);">
+            <span>@(string.IsNullOrEmpty(Model.AuthorName) ? "Anonymous" : Model.AuthorName)</span>
+            <span>•</span>
+            <time datetime="@Model.PublishedAt?.ToString("yyyy-MM-dd")">@Model.PublishedAt?.ToString("MMM d, yyyy")</time>
+        </div>
+
+        <h3 class="text-lg font-bold leading-snug">
+            <a href="/@Model.Slug" class="hover:opacity-70 transition-opacity" style="color: var(--card-foreground);">@Model.Title</a>
+        </h3>
+
+        @if (!string.IsNullOrEmpty(Model.MetaDescription))
+        {
+            <p class="text-sm leading-relaxed line-clamp-2" style="color: var(--muted-foreground);">@(Model.MetaDescription.Length > 120 ? Model.MetaDescription.Substring(0, 120) + "..." : Model.MetaDescription)</p>
+        }
+        else if (!string.IsNullOrEmpty(Model.Plaintext))
+        {
+            <p class="text-sm leading-relaxed line-clamp-2" style="color: var(--muted-foreground);">@(Model.Plaintext.Length > 120 ? Model.Plaintext.Substring(0, 120) + "..." : Model.Plaintext)</p>
+        }
+
+        <div class="mt-auto pt-3">
+            <a href="/@Model.Slug" class="text-sm font-semibold inline-flex items-center gap-1 hover:opacity-80" style="color: var(--primary);">
+                Read More <i class="bi bi-arrow-right text-xs"></i>
+            </a>
+        </div>
+    </div>
+</article>

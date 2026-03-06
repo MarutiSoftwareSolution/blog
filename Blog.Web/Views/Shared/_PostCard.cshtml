@@ -1,0 +1,30 @@
+@model Blog.Core.Domain.Post
+
+@{
+    var blogLayout = (string)(ViewBag.LayoutPostCard ?? "Neutral");
+}
+
+@if (blogLayout == "Magazine")
+{
+    <partial name="_PostCard_Magazine" model="Model" />
+}
+else if (blogLayout == "Grid")
+{
+    <partial name="_PostCard_Grid" model="Model" />
+}
+else if (blogLayout == "Minimal")
+{
+    <partial name="_PostCard_Minimal" model="Model" />
+}
+else if (blogLayout == "Classic")
+{
+    <partial name="_PostCard_Classic" model="Model" />
+}
+else if (blogLayout == "Modern")
+{
+    <partial name="_PostCard_Modern" model="Model" />
+}
+else
+{
+    <partial name="_PostCard_Neutral" model="Model" />
+}

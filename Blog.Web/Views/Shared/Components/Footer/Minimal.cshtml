@@ -1,0 +1,45 @@
+@inject Blog.Core.Interfaces.ISettingRepository SettingsRepo
+@{
+    var userSettings = await SettingsRepo.GetSettingsAsync(ViewBag.OwnerId ?? Guid.Empty);
+    var siteName = userSettings.SiteName;
+    var siteDescription = userSettings.SiteDescription;
+    string twitter   = userSettings.SocialTwitter;
+    string facebook  = userSettings.SocialFacebook;
+    string instagram = userSettings.SocialInstagram;
+    string youtube   = userSettings.SocialYoutube;
+    string linkedin  = userSettings.SocialLinkedin;
+    string github    = userSettings.SocialGithub;
+}
+
+@* MINIMAL footer — pure typography, zero borders except hairline, maximum whitespace *@
+<footer style="background: var(--background);">
+    <div class="h-px w-full" style="background: var(--foreground);"></div>
+    <div class="container xl:max-w-6xl mx-auto px-6 py-12 md:py-16">
+        <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-10">
+            @* Brand *@
+            <div class="flex flex-col gap-4 max-w-xs">
+                <a href="/" class="text-3xl font-black uppercase tracking-tight hover:opacity-50 transition-opacity"
+                   style="color: var(--foreground); letter-spacing: -0.04em;">@siteName</a>
+                <p class="text-sm leading-relaxed" style="color: var(--muted-foreground);">@siteDescription</p>
+            </div>
+            @* Socials — bare icons, no borders *@
+            <div class="flex items-center gap-5">
+                <a href="/feed" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="RSS Feed">
+                    <i class="bi bi-rss-fill text-lg"></i>
+                </a>
+                @if (!string.IsNullOrEmpty(twitter))   { <a href="@twitter"   target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="X / Twitter"><i class="bi bi-twitter-x text-lg"></i></a> }
+                @if (!string.IsNullOrEmpty(facebook))  { <a href="@facebook"  target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="Facebook"><i class="bi bi-facebook text-lg"></i></a> }
+                @if (!string.IsNullOrEmpty(instagram)) { <a href="@instagram" target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="Instagram"><i class="bi bi-instagram text-lg"></i></a> }
+                @if (!string.IsNullOrEmpty(youtube))   { <a href="@youtube"   target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="YouTube"><i class="bi bi-youtube text-lg"></i></a> }
+                @if (!string.IsNullOrEmpty(linkedin))  { <a href="@linkedin"  target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="LinkedIn"><i class="bi bi-linkedin text-lg"></i></a> }
+                @if (!string.IsNullOrEmpty(github))    { <a href="@github"    target="_blank" class="hover:opacity-40 transition-opacity" style="color: var(--foreground);" title="GitHub"><i class="bi bi-github text-lg"></i></a> }
+            </div>
+        </div>
+    </div>
+    @* Copyright — thin hairline above *@
+    <div class="h-px mx-6" style="background: var(--border);"></div>
+    <div class="container xl:max-w-6xl mx-auto px-6 py-5 flex items-center justify-between text-xs" style="color: var(--muted-foreground);">
+        <span>&copy; @DateTime.Now.Year @siteName</span>
+        <a href="/" class="hover:opacity-50 transition-opacity uppercase tracking-[0.15em]">Home</a>
+    </div>
+</footer>

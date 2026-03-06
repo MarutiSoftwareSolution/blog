@@ -1,0 +1,141 @@
+@using Blog.Web.Models
+@model SettingsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "General Settings";
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-border">
+            <h2 class="text-lg font-semibold text-foreground">General Settings</h2>
+            <p class="text-sm text-muted-foreground mt-1">Configure basic site settings and preferences.</p>
+        </div>
+        
+        <form asp-action="Update" method="post" class="p-6 space-y-6">
+            @Html.AntiForgeryToken()
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="p-3 mb-4 rounded-md bg-destructive/10 text-destructive text-xs font-medium">
+                    @TempData["Error"]
+                </div>
+            }
+
+            <div class="grid gap-6 md:grid-cols-2">
+                <div class="space-y-2">
+                    <label asp-for="SiteName" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"></label>
+                    <input asp-for="SiteName" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                    <span asp-validation-for="SiteName" class="text-sm font-medium text-destructive"></span>
+                </div>
+
+                <div class="space-y-2">
+                    <label asp-for="SiteTagline" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"></label>
+                    <input asp-for="SiteTagline" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                    <span asp-validation-for="SiteTagline" class="text-sm font-medium text-destructive"></span>
+                </div>
+            </div>
+
+            <div class="grid gap-6 md:grid-cols-2">
+                <div class="space-y-2">
+                    <label asp-for="SiteLogoUrl" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"></label>
+                    <div class="flex gap-2 mb-2 @(string.IsNullOrEmpty(Model.SiteLogoUrl) ? "hidden" : "")" id="SiteLogoPreviewWrapper">
+                        <img id="SiteLogoPreview" src="@Model.SiteLogoUrl" class="w-full h-auto max-h-32 object-contain rounded border" />
+                    </div>
+                    <div class="flex gap-2">
+                        <input asp-for="SiteLogoUrl" id="SiteLogoInput" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder="https://" />
+                        <button type="button" 
+                                onclick="window.dispatchEvent(new CustomEvent('open-media-selector', { detail: { targetInput: 'SiteLogoInput', previewImg: 'SiteLogoPreview', folder: 'images' } })); document.getElementById('SiteLogoPreviewWrapper').classList.remove('hidden');" 
+                                class="px-4 py-2 bg-secondary text-secondary-foreground border border-border rounded-md text-sm font-medium shrink-0">Select</button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label asp-for="SiteFaviconUrl" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"></label>
+                    <div class="flex gap-2 mb-2 @(string.IsNullOrEmpty(Model.SiteFaviconUrl) ? "hidden" : "")" id="SiteFaviconPreviewWrapper">
+                        <img id="SiteFaviconPreview" src="@Model.SiteFaviconUrl" class="w-16 h-16 object-contain rounded border" />
+                    </div>
+                    <div class="flex gap-2">
+                        <input asp-for="SiteFaviconUrl" id="SiteFaviconInput" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" placeholder="https://" />
+                        <button type="button" 
+                                onclick="window.dispatchEvent(new CustomEvent('open-media-selector', { detail: { targetInput: 'SiteFaviconInput', previewImg: 'SiteFaviconPreview', folder: 'images' } })); document.getElementById('SiteFaviconPreviewWrapper').classList.remove('hidden');" 
+                                class="px-4 py-2 bg-secondary text-secondary-foreground border border-border rounded-md text-sm font-medium shrink-0">Select</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <label asp-for="PostsPerPage" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"></label>
+                <input asp-for="PostsPerPage" type="number" min="1" max="100" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" />
+                <p class="text-xs text-muted-foreground">Number of posts to display per page (1-100).</p>
+                <span asp-validation-for="PostsPerPage" class="text-sm font-medium text-destructive"></span>
+            </div>
+
+            <div class="space-y-4 pt-2 border-t border-border">
+                <h3 class="text-sm font-medium text-foreground">Comments</h3>
+                <div class="flex items-start space-x-3">
+                    <input asp-for="CommentsEnabled" type="checkbox" class="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary bg-background" />
+                    <div class="grid gap-1.5 leading-none">
+                        <label asp-for="CommentsEnabled" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Enable comments</label>
+                        <p class="text-sm text-muted-foreground">Allow users to comment on posts.</p>
+                    </div>
+                </div>
+
+                <div class="flex items-start space-x-3">
+                    <input asp-for="CommentsModeration" type="checkbox" class="mt-1 h-4 w-4 rounded border-border text-primary focus:ring-primary bg-background" />
+                    <div class="grid gap-1.5 leading-none">
+                        <label asp-for="CommentsModeration" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Comment moderation</label>
+                        <p class="text-sm text-muted-foreground">Comments must be approved by an admin before they appear.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-4 pt-6 border-t border-border">
+                <div>
+                    <h3 class="text-sm font-medium text-foreground">Social Links</h3>
+                    <p class="text-xs text-muted-foreground mt-1">Leave blank to hide the icon. Used in site headers/footers.</p>
+                </div>
+                
+                <div class="grid gap-6 md:grid-cols-2">
+                    <div class="space-y-2">
+                        <label asp-for="SocialTwitter" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialTwitter" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://x.com/username" />
+                    </div>
+                    <div class="space-y-2">
+                        <label asp-for="SocialFacebook" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialFacebook" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://facebook.com/username" />
+                    </div>
+                    <div class="space-y-2">
+                        <label asp-for="SocialInstagram" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialInstagram" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://instagram.com/username" />
+                    </div>
+                    <div class="space-y-2">
+                        <label asp-for="SocialYoutube" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialYoutube" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://youtube.com/@@username" />
+                    </div>
+                    <div class="space-y-2">
+                        <label asp-for="SocialLinkedin" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialLinkedin" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://linkedin.com/in/username" />
+                    </div>
+                    <div class="space-y-2">
+                        <label asp-for="SocialGithub" class="text-sm font-medium leading-none"></label>
+                        <input asp-for="SocialGithub" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="https://github.com/username" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-6 flex justify-end">
+                <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2 shadow-sm">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<partial name="_MediaSelectorModal" />
+
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

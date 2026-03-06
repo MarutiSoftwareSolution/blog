@@ -1,0 +1,71 @@
+@model Blog.Web.Models.NavbarViewModel
+
+<header class="sticky top-0 z-50 w-full border-b border-border bg-background">
+    <div class="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div class="flex items-center gap-8">
+            <a href="/" class="flex flex-col leading-none group">
+                @if (!string.IsNullOrEmpty(Model.SiteLogoUrl))
+                {
+                    <img src="@Model.SiteLogoUrl" alt="@Model.SiteName" class="h-8 w-auto object-contain" />
+                }
+                else
+                {
+                    <span class="text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors duration-300">@Model.SiteName</span>
+                    @if (!string.IsNullOrEmpty(Model.Tagline))
+                    {
+                        <span class="text-xs text-muted-foreground font-medium mt-0.5 group-hover:text-primary/80 transition-colors duration-300">@Model.Tagline</span>
+                    }
+                }
+            </a>
+            <nav class="hidden md:flex items-center gap-6 text-sm font-medium relative">
+                <a href="/" class="text-foreground/80 hover:text-foreground transition-colors">Home</a>
+                
+                @{
+                    var sortedPages = Model.Pages.OrderBy(p => p.SortOrder).ToList();
+                    var visiblePages = sortedPages.Take(4).ToList();
+                    var hiddenPages = sortedPages.Skip(4).ToList();
+                }
+
+                @foreach (var navPage in visiblePages)
+                {
+                    <a href="/@navPage.Slug" class="text-foreground/80 hover:text-foreground transition-colors">@navPage.Title</a>
+                }
+
+                @if (hiddenPages.Any())
+                {
+                    <div class="relative group" x-data="{ open: false }" @@mouseenter="open = true" @@mouseleave="open = false">
+                        <button class="flex items-center gap-1 text-foreground/80 hover:text-foreground transition-colors focus:outline-none">
+                            More
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': open}" class="transition-transform duration-200"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        
+                        <!-- Dropdown Menu -->
+                        <div x-show="open" 
+                             x-transition:enter="transition ease-out duration-100"
+                             x-transition:enter-start="transform opacity-0 scale-95"
+                             x-transition:enter-end="transform opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-75"
+                             x-transition:leave-start="transform opacity-100 scale-100"
+                             x-transition:leave-end="transform opacity-0 scale-95"
+                             class="absolute left-0 mt-2 w-48 rounded-md shadow-lg bg-popover ring-1 ring-border focus:outline-none z-50 overflow-hidden"
+                             style="display: none;">
+                            <div class="max-h-64 overflow-y-auto py-1">
+                                @foreach (var hiddenPage in hiddenPages)
+                                {
+                                    <a href="/@hiddenPage.Slug" class="block px-4 py-2 text-sm text-popover-foreground hover:bg-muted hover:text-foreground transition-colors">
+                                        @hiddenPage.Title
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </nav>
+        </div>
+        
+        <!-- Mobile Menu Button (Placeholder for future implementation if needed) -->
+        <button class="md:hidden text-foreground hover:text-primary transition-colors duration-300">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+    </div>
+</header>

@@ -1,0 +1,192 @@
+@model Blog.Core.Domain.User
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Your Profile";
+}
+
+<div class="max-w-3xl">
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold text-foreground">Profile Settings</h2>
+        <p class="text-sm text-muted-foreground">Manage your account information and preferences.</p>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="space-y-6">
+        @Html.AntiForgeryToken()
+        
+        <div class="bg-card shadow-sm border border-border rounded-lg overflow-hidden">
+            <div class="p-6 space-y-6">
+                <!-- Avatar Section -->
+                <div class="flex flex-col sm:flex-row gap-6">
+                    <div class="flex-shrink-0">
+                        <label class="block text-sm font-medium text-foreground mb-2">Profile Picture</label>
+                        <div class="relative inline-block">
+                            <div class="relative w-24 h-24 rounded-full overflow-hidden bg-muted border border-border">
+                                @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                                {
+                                    <img src="@Model.AvatarUrl" alt="@Model.DisplayName" class="w-full h-full object-cover" />
+                                }
+                                else
+                                {
+                                    <div class="flex items-center justify-center w-full h-full text-muted-foreground">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </div>
+                                }
+                            </div>
+                            <button type="button" id="removeAvatarBtn" onclick="removeAvatarImage()" class="@(string.IsNullOrEmpty(Model.AvatarUrl) ? "hidden" : "") absolute top-0 right-0 bg-background text-destructive rounded-full p-1 border border-border shadow-sm hover:bg-destructive hover:text-destructive-foreground transition-colors opacity-80 hover:opacity-100" title="Remove Profile Photo">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 space-y-6">
+                        <div>
+                            <input type="hidden" id="avatarUrlInput" name="avatarUrl" value="@Model.AvatarUrl" />
+                            <input type="hidden" id="removeAvatarInput" name="removeAvatar" value="false" />
+                            <label class="block text-sm font-medium text-foreground mb-2">Upload Profile Photo</label>
+                            <input type="file" name="avatarFile" id="avatarFileInput" accept="image/*" class="w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 transition-colors focus:outline-none" />
+                        </div>
+                        
+                        <div class="pt-4 border-t border-border">
+                            <label class="block text-sm font-medium text-foreground mb-2">Or Choose a Generated Avatar</label>
+                            <div id="avatarGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                                <!-- Populated by JS -->
+                            </div>
+                            <button type="button" onclick="generateAvatars()" class="mt-3 text-xs text-primary hover:underline flex items-center gap-1">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/></svg>
+                                Generate New Options
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <script>
+                        const styles = ['notionists'];
+                        const grid = document.getElementById('avatarGrid');
+                        const input = document.getElementById('avatarUrlInput');
+                        const fileInput = document.getElementById('avatarFileInput');
+                        const removeInput = document.getElementById('removeAvatarInput');
+                        const removeBtn = document.getElementById('removeAvatarBtn');
+                        let preview = document.querySelector('.relative.w-24.h-24 img');
+                        
+                        function getOrCreatePreviewImg() {
+                            if (preview) return preview;
+                            const container = document.querySelector('.relative.w-24.h-24');
+                            container.innerHTML = '<img src="" alt="Avatar Preview" class="w-full h-full object-cover" />';
+                            preview = container.querySelector('img');
+                            return preview;
+                        }
+
+                        function setEmptyPreview() {
+                            const container = document.querySelector('.relative.w-24.h-24');
+                            container.innerHTML = '<div class="flex items-center justify-center w-full h-full text-muted-foreground"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
+                            preview = null;
+                            removeBtn.classList.add('hidden');
+                        }
+
+                        function removeAvatarImage() {
+                            input.value = '';
+                            fileInput.value = '';
+                            removeInput.value = 'true';
+                            grid.querySelectorAll('button').forEach(b => b.classList.remove('ring-2', 'ring-primary'));
+                            setEmptyPreview();
+                        }
+
+                        fileInput.addEventListener('change', function() {
+                            if (this.files && this.files[0]) {
+                                const reader = new FileReader();
+                                reader.onload = function(e) {
+                                    const p = getOrCreatePreviewImg();
+                                    p.src = e.target.result;
+                                    input.value = ''; // Clear selected notionist avatar if custom is uploaded
+                                    removeInput.value = 'false';
+                                    removeBtn.classList.remove('hidden');
+                                    grid.querySelectorAll('button').forEach(b => b.classList.remove('ring-2', 'ring-primary'));
+                                }
+                                reader.readAsDataURL(this.files[0]);
+                            }
+                        });
+
+                        function generateAvatars() {
+                            grid.innerHTML = '';
+                            for (let i = 0; i < 8; i++) {
+                                const style = styles[Math.floor(Math.random() * styles.length)];
+                                const seed = Math.random().toString(36).substring(7);
+                                const url = `https://api.dicebear.com/9.x/${style}/webp?seed=${seed}&backgroundColor=b6e3f4,c0aede,d1d4f9,ffdfbf,ffd5dc`;
+                                
+                                const btn = document.createElement('button');
+                                btn.type = 'button';
+                                btn.className = 'aspect-square rounded-full border-2 border-transparent hover:border-primary focus:border-primary overflow-hidden transition-all shadow-sm bg-muted';
+                                btn.innerHTML = `<img src="${url}" class="w-full h-full object-cover" loading="lazy" />`;
+                                btn.onclick = () => {
+                                    input.value = url;
+                                    fileInput.value = ''; // Clear file input if generated avatar is selected
+                                    removeInput.value = 'false';
+                                    removeBtn.classList.remove('hidden');
+                                    const p = getOrCreatePreviewImg();
+                                    p.src = url;
+                                    // Highlight selected
+                                    grid.querySelectorAll('button').forEach(b => b.classList.remove('ring-2', 'ring-primary'));
+                                    btn.classList.add('ring-2', 'ring-primary');
+                                    // Removed auto-submit so the page doesn't refresh
+                                };
+                                grid.appendChild(btn);
+                            }
+                        }
+                        
+                        // Initial generation
+                        generateAvatars();
+                    </script>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Display Name -->
+                    <div class="col-span-2 sm:col-span-1">
+                        <label class="block text-sm font-medium text-foreground mb-1">Display Name <span class="text-destructive">*</span></label>
+                        <input type="text" name="displayName" value="@Model.DisplayName" required class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input" />
+                        <p class="text-xs text-muted-foreground mt-1">This name will be displayed publicly on your posts.</p>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-span-2 sm:col-span-1">
+                        <label class="block text-sm font-medium text-foreground mb-1">Email Address <span class="text-destructive">*</span></label>
+                        <input type="email" name="email" value="@Model.Email" required class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input" />
+                    </div>
+
+                    <!-- Website -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-foreground mb-1">Website URL</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-2 text-muted-foreground text-sm">https://</span>
+                            <input type="text" name="website" value="@(Model.Website?.Replace("https://","").Replace("http://",""))" class="w-full pl-16 px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input" />
+                        </div>
+                    </div>
+
+                    <!-- Bio -->
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-foreground mb-1">Bio</label>
+                        <textarea name="bio" rows="4" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input">@Model.Bio</textarea>
+                        <p class="text-xs text-muted-foreground mt-1">Brief description for your author profile.</p>
+                    </div>
+                </div>
+
+                <div class="pt-6 border-t border-border">
+                    <h3 class="text-base font-medium text-foreground mb-4">Security</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="col-span-2 sm:col-span-1">
+                            <label class="block text-sm font-medium text-foreground mb-1">New Password</label>
+                            <input type="password" name="newPassword" placeholder="Leave empty to keep current" class="w-full px-3 py-2 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-input" />
+                        </div>
+                        <div class="col-span-2 sm:col-span-1">
+                            <!-- Confirm password could go here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-muted/50 px-6 py-4 border-t border-border flex items-center justify-end gap-3">
+                <a href="/admin/dashboard" class="px-4 py-2 border border-input hover:bg-accent hover:text-accent-foreground rounded-md text-sm font-medium transition-colors">Cancel</a>
+                <button type="submit" class="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-sm font-medium shadow-sm transition-colors">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>

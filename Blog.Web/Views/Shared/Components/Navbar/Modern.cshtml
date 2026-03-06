@@ -1,0 +1,132 @@
+@model Blog.Web.Models.NavbarViewModel
+@{
+    var sortedPages = Model.Pages.OrderBy(p => p.SortOrder).ToList();
+    var logoUrl = !string.IsNullOrEmpty(Model.SiteLogoUrl)
+        ? Model.SiteLogoUrl
+        : $"https://placehold.co/400x120/171717/FFFFFF?text={Uri.EscapeDataString(Model.SiteName.ToUpper())}";
+}
+
+@* MODERN (Professional) — sharp single bar, solid primary left border accent, no rounded, no gradients *@
+<header x-data="{ searchOpen: false, mobileOpen: false }"
+        class="sticky top-0 z-50 w-full border-b border-l-4"
+        style="background: var(--background); border-bottom-color: var(--border); border-left-color: var(--primary);">
+
+    <div class="container xl:max-w-6xl mx-auto px-4">
+        <div class="flex items-center justify-between" style="height: 4rem;">
+
+            @* Left: Site name *@
+            <a href="/" class="flex flex-col leading-none hover:opacity-70 transition-opacity shrink-0">
+                <span class="text-xl font-bold tracking-tight" style="color: var(--foreground); font-family: var(--font-sans);">
+                    @Model.SiteName.ToUpper()
+                </span>
+                @if (!string.IsNullOrEmpty(Model.Tagline))
+                {
+                    <span class="text-[10px] uppercase tracking-[0.18em] font-medium mt-0.5 hidden md:block"
+                          style="color: var(--muted-foreground);">@Model.Tagline</span>
+                }
+            </a>
+
+            @* Center: Logo *@
+            <a href="/" class="absolute left-1/2 -translate-x-1/2 hidden md:flex">
+                <img src="@logoUrl" alt="@Model.SiteName" class="h-9 w-auto object-contain" />
+            </a>
+
+            @* Right: Icon cluster — all square, no rounding *@
+            <div class="flex items-center gap-0 shrink-0">
+
+                @* Pages dropdown *@
+                <div class="relative" x-data="{ pagesOpen: false }">
+                    <button @@click="pagesOpen = !pagesOpen" @@click.outside="pagesOpen = false"
+                            class="w-10 h-10 flex items-center justify-center border-l hover:opacity-60 transition-opacity"
+                            style="border-color: var(--border); color: var(--foreground);"
+                            title="Pages">
+                        <i class="bi bi-layout-text-sidebar text-base"></i>
+                    </button>
+                    <div x-show="pagesOpen"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0 -translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         style="display:none; background: var(--card); border-color: var(--border); border-top: 3px solid var(--primary);"
+                         class="absolute right-0 top-full min-w-52 border shadow-lg z-50">
+                        <a href="/" class="flex items-center gap-3 px-4 py-3.5 text-sm font-semibold hover:opacity-60 border-b" style="border-color: var(--border); color: var(--foreground);">
+                            <i class="bi bi-house text-xs" style="color: var(--primary);"></i> Home
+                        </a>
+                        @foreach (var navPage in sortedPages)
+                        {
+                            <a href="/@navPage.Slug" class="flex items-center gap-3 px-4 py-3 text-sm font-medium hover:opacity-60 border-b" style="border-color: var(--border); color: var(--foreground);">
+                                <i class="bi bi-chevron-right text-xs" style="color: var(--muted-foreground);"></i> @navPage.Title
+                            </a>
+                        }
+                    </div>
+                </div>
+
+                @* Search *@
+                <button @@click="searchOpen = !searchOpen"
+                        class="w-10 h-10 flex items-center justify-center border-l hover:opacity-60 transition-opacity"
+                        style="border-color: var(--border); color: var(--foreground);">
+                    <i class="bi bi-search text-base"></i>
+                </button>
+
+                @* Dashboard *@
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <a href="/admin/dashboard"
+                       class="hidden md:flex items-center px-5 h-10 text-xs font-bold uppercase tracking-widest border-l hover:opacity-80 transition-opacity"
+                       style="border-color: var(--primary); background: var(--primary); color: var(--primary-foreground);">
+                        Dashboard
+                    </a>
+                }
+
+                @* Mobile *@
+                <button @@click="mobileOpen = !mobileOpen"
+                        class="md:hidden w-10 h-10 flex items-center justify-center border-l"
+                        style="border-color: var(--border); color: var(--foreground);">
+                    <i class="bi bi-list text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* Mobile dropdown *@
+    <div x-show="mobileOpen" x-transition class="md:hidden border-t" style="background: var(--background); border-color: var(--border);">
+        <div class="px-4 py-3 flex flex-col gap-0">
+            <a href="/" class="py-3 text-sm font-semibold border-b hover:opacity-60" style="border-color: var(--border); color: var(--foreground);">Home</a>
+            @foreach (var navPage in sortedPages)
+            {
+                <a href="/@navPage.Slug" class="py-3 text-sm border-b hover:opacity-60" style="border-color: var(--border); color: var(--foreground);">@navPage.Title</a>
+            }
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <a href="/admin/dashboard" class="mt-2 py-2.5 text-sm font-bold uppercase tracking-wider text-center" style="background: var(--primary); color: var(--primary-foreground);">Dashboard</a>
+            }
+        </div>
+    </div>
+
+    @* Search flyout — drops inline below header *@
+    <div x-show="searchOpen"
+         x-transition:enter="transition ease-out duration-150"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-100"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="display:none; background: var(--background); border-bottom: 3px solid var(--primary);"
+         class="absolute top-full left-0 right-0 z-40 px-4 py-4 border-b"
+         style="border-color: var(--border);">
+        <div class="container xl:max-w-6xl mx-auto">
+            <form action="/" method="get" class="flex items-center gap-4">
+                <div class="w-1 h-6" style="background: var(--primary);"></div>
+                <span class="text-xs uppercase tracking-widest font-bold shrink-0" style="color: var(--muted-foreground);">Search</span>
+                <input type="text" name="search" placeholder="Type and press enter…"
+                       class="flex-1 bg-transparent border-0 border-b text-sm outline-none py-1"
+                       style="border-color: var(--foreground); color: var(--foreground);" />
+                <button type="button" @@click="searchOpen = false"
+                        class="text-xl hover:opacity-50 transition-opacity shrink-0">&times;</button>
+            </form>
+        </div>
+    </div>
+
+</header>

@@ -1,0 +1,18 @@
+@model Blog.Core.Domain.Page
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = Model.Title;
+    ViewData["Description"] = "";
+    ViewData["SiteName"] = ViewBag.SiteName ?? "Blog";
+
+    var blogLayout = (string)(ViewBag.LayoutPage ?? "Neutral");
+}
+
+@if (blogLayout == "Magazine")
+{
+    <partial name="_Page_Magazine" model="Model" />
+}
+else
+{
+    <partial name="_Page_Neutral" model="Model" />
+}

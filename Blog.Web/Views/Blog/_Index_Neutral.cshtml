@@ -1,0 +1,220 @@
+@using Blog.Core.Interfaces
+@model PagedResult<Blog.Core.Domain.Post>
+@{
+    var searchTerm = ViewBag.SearchTerm as string;
+    var selectedCategories = ViewBag.SelectedCategories as List<string> ?? new List<string>();
+    var selectedTags = ViewBag.SelectedTags as List<string> ?? new List<string>();
+    var popularPosts = ViewBag.PopularPosts as List<Blog.Core.Domain.Post> ?? new List<Blog.Core.Domain.Post>();
+
+    var isFirstPage = Model.Page == 1 && !selectedCategories.Any() && !selectedTags.Any() && string.IsNullOrEmpty(searchTerm);
+    var heroPost = (isFirstPage && Model.Items.Count >= 4) ? Model.Items.FirstOrDefault() : null;
+    var gridPosts = heroPost != null ? Model.Items.Skip(1) : Model.Items;
+
+    string GetToggleUrl(string type, string slug)
+    {
+        var currentCats = new List<string>(selectedCategories);
+        var currentTags = new List<string>(selectedTags);
+
+        if (type == "category")
+        {
+            if (currentCats.Contains(slug)) currentCats.Remove(slug);
+            else currentCats.Add(slug);
+        }
+        else if (type == "tags")
+        {
+            if (currentTags.Contains(slug)) currentTags.Remove(slug);
+            else currentTags.Add(slug);
+        }
+
+        var queryParts = new List<string>();
+        if (!string.IsNullOrEmpty(searchTerm)) queryParts.Add("search=" + Uri.EscapeDataString(searchTerm));
+        if (currentCats.Any()) queryParts.Add("category=" + string.Join(",", currentCats));
+        if (currentTags.Any()) queryParts.Add("tags=" + string.Join(",", currentTags));
+
+        return queryParts.Any() ? "?" + string.Join("&", queryParts) : "/";
+    }
+}
+
+<!-- Container -->
+<div class="container xl:max-w-6xl mx-auto px-4 flex flex-col gap-4 lg:gap-6">
+
+    @if (heroPost != null)
+    {
+        <!-- Hero -->
+        <div class="relative pt-4 lg:pt-6 flex flex-col gap-4 lg:gap-6">
+            <div class="relative overflow-hidden w-full aspect-[1/1] sm:aspect-[3/2] md:aspect-[2/1] flex justify-center items-center" style="background: var(--muted);">
+                @if (!string.IsNullOrEmpty(heroPost.FeatureImage))
+                {
+                    <img src="@heroPost.FeatureImage" alt="@heroPost.Title" class="absolute w-full inset-x-0 bottom-0 object-cover h-full" />
+                }
+                <!-- Card overlay -->
+                <div class="relative max-w-[80%] lg:max-w-[60%] md:min-w-[60%] aspect-[1/1] sm:aspect-[3/2] md:aspect-[2/1] p-4 sm:p-6 text-center" style="background: var(--background);">
+                    <div class="h-full flex flex-col items-center gap-2 sm:gap-3 overflow-hidden">
+                        <span class="uppercase text-sm" style="color: var(--muted-foreground);">@heroPost.PublishedAt?.ToString("MMM dd, yyyy")</span>
+                        <h1 class="text-2xl sm:text-3xl md:text-4xl font-medium">@heroPost.Title</h1>
+                        <p class="mb-2" style="color: var(--muted-foreground);">@(heroPost.MetaDescription ?? heroPost.Plaintext?.Substring(0, Math.Min(heroPost.Plaintext?.Length ?? 0, 200)))</p>
+                        <a href="/@heroPost.Slug" class="inline-flex py-2 px-4 border border-dashed hover:opacity-80" style="background: var(--muted); border-color: var(--border);">Read More</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    }
+
+    <!-- Layout: Sidebar + Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 py-6">
+
+        <!-- Sidebar -->
+        <aside class="max-lg:order-2 lg:col-span-1 lg:pe-6">
+            <div class="flex flex-col gap-4 lg:gap-6 hc-sticky">
+
+                <!-- Category Widget -->
+                <div class="border border-dashed" style="background: var(--muted); border-color: var(--border);">
+                    <h3 class="w-full px-6 py-3 border-b border-dashed" style="border-color: var(--border);">Category</h3>
+                    <div class="py-3 px-6">
+                        <ul class="flex flex-col">
+                            @if (ViewBag.Categories != null)
+                            {
+                                foreach (var cat in (IEnumerable<Blog.Core.Domain.Category>)ViewBag.Categories)
+                                {
+                                    bool isSelected = selectedCategories.Contains(cat.Slug);
+                                    <li class="relative">
+                                        <a href="@GetToggleUrl("category", cat.Slug)" class="flex items-center gap-3 justify-between py-1.5 hover:opacity-80 @(isSelected ? "font-bold" : "")">
+                                            <span>@cat.Name</span>
+                                            <span>(@cat.PostCount)</span>
+                                        </a>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Popular Post Widget -->
+                @if (popularPosts.Any())
+                {
+                    <div class="border border-dashed" style="background: var(--muted); border-color: var(--border);">
+                        <h3 class="w-full px-6 py-3 border-b border-dashed" style="border-color: var(--border);">Popular Post</h3>
+                        <div class="p-6 flex flex-col">
+                            @foreach (var pop in popularPosts.Take(4))
+                            {
+                                <a href="/@pop.Slug" class="flex gap-2 py-3 border-b border-dashed last:border-b-0" style="border-color: var(--border);">
+                                    @if (!string.IsNullOrEmpty(pop.FeatureImage))
+                                    {
+                                        <img src="@pop.FeatureImage" alt="@pop.Title" class="w-16 h-16 object-cover flex-shrink-0" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-16 h-16 flex-shrink-0 flex items-center justify-center" style="background: var(--accent);">
+                                            <i class="bi bi-image" style="color: var(--muted-foreground);"></i>
+                                        </div>
+                                    }
+                                    <div class="flex flex-col gap-1">
+                                        <h4 class="text-sm capitalize hover:opacity-80">@(pop.Title.Length > 45 ? pop.Title.Substring(0, 45) + " ..." : pop.Title)</h4>
+                                        <span class="text-sm" style="color: var(--muted-foreground);">@pop.PublishedAt?.ToString("dd MMM, yyyy")</span>
+                                    </div>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Tags Widget -->
+                @if (ViewBag.Tags != null)
+                {
+                    var allTags = (IEnumerable<Blog.Core.Domain.Tag>)ViewBag.Tags;
+                    if (allTags.Any())
+                    {
+                        <div class="border border-dashed" style="background: var(--muted); border-color: var(--border);">
+                            <h3 class="w-full px-6 py-3 border-b border-dashed" style="border-color: var(--border);">Tags</h3>
+                            <div class="p-6">
+                                <ul class="flex flex-wrap items-center gap-2 text-sm">
+                                    @foreach (var tag in allTags)
+                                    {
+                                        bool isSelected = selectedTags.Contains(tag.Slug);
+                                        <li>
+                                            <a href="@GetToggleUrl("tags", tag.Slug)"
+                                               class="flex py-1 px-3 border hover:opacity-80 @(isSelected ? "font-bold" : "")"
+                                               style="background: var(--background); border-color: var(--border);">
+                                                @tag.Name
+                                            </a>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="max-lg:order-1 max-lg:mb-12 lg:col-span-2">
+            @if (!string.IsNullOrEmpty(searchTerm))
+            {
+                <div class="mb-4 flex items-center gap-2">
+                    <span class="text-sm" style="color: var(--muted-foreground);">Search results for:</span>
+                    <span class="font-medium">"@searchTerm"</span>
+                    <a href="/" class="text-xs px-2 py-0.5 ml-2 border border-dashed hover:opacity-80" style="border-color: var(--border);">Clear</a>
+                </div>
+            }
+
+            <h2 class="text-lg uppercase font-medium border-b border-dashed pb-2" style="border-color: var(--border);">Latest Post</h2>
+
+            @if (!Model.Items.Any())
+            {
+                <div class="py-16 text-center">
+                    <i class="bi bi-journal-text text-5xl mb-4 block" style="color: var(--muted-foreground);"></i>
+                    <h2 class="text-2xl font-bold mb-2">No stories yet</h2>
+                    <p style="color: var(--muted-foreground);">The journey begins with a single word.</p>
+                </div>
+            }
+            else
+            {
+                <!-- Post loop -->
+                <div class="flex flex-col">
+                    @foreach (var post in gridPosts)
+                    {
+                        <partial name="_PostCard" model="post" />
+                    }
+                </div>
+            }
+
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                var qParts = new List<string>();
+                if (!string.IsNullOrEmpty(searchTerm)) qParts.Add("search=" + Uri.EscapeDataString(searchTerm));
+                if (selectedCategories.Any()) qParts.Add("category=" + string.Join(",", selectedCategories));
+                if (selectedTags.Any()) qParts.Add("tags=" + string.Join(",", selectedTags));
+                var baseQuery = qParts.Any() ? "&" + string.Join("&", qParts) : "";
+
+                <div class="flex items-center justify-between gap-3 py-4 border-t border-dashed" style="border-color: var(--border);">
+                    @if (Model.Page > 1)
+                    {
+                        <a class="uppercase hover:opacity-80 flex items-center text-sm gap-2" style="color: var(--muted-foreground);" href="?page=@(Model.Page - 1)@baseQuery">
+                            <i class="bi bi-arrow-left"></i> Newer Posts
+                        </a>
+                    }
+                    else
+                    {
+                        <span></span>
+                    }
+
+                    <span class="text-sm" style="color: var(--muted-foreground);">Page @Model.Page of @Model.TotalPages</span>
+
+                    @if (Model.Page < Model.TotalPages)
+                    {
+                        <a class="uppercase hover:opacity-80 flex items-center text-sm gap-2" style="color: var(--muted-foreground);" href="?page=@(Model.Page + 1)@baseQuery">
+                            Older Posts <i class="bi bi-arrow-right"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span></span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

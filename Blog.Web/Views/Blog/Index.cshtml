@@ -1,0 +1,36 @@
+@using Blog.Core.Interfaces
+@model PagedResult<Blog.Core.Domain.Post>
+@{
+    Layout = "_PublicLayout";
+    ViewData["Title"] = ViewBag.SiteName + " – " + ViewBag.Tagline;
+    ViewData["SiteName"] = ViewBag.SiteName;
+    ViewData["Tagline"] = ViewBag.Tagline;
+    ViewData["Description"] = ViewBag.Tagline;
+
+    var blogLayout = (string)(ViewBag.LayoutIndex ?? "Neutral");
+}
+
+@if (blogLayout == "Magazine")
+{
+    <partial name="_Index_Magazine" model="Model" />
+}
+else if (blogLayout == "Grid")
+{
+    <partial name="_Index_Grid" model="Model" />
+}
+else if (blogLayout == "Minimal")
+{
+    <partial name="_Index_Minimal" model="Model" />
+}
+else if (blogLayout == "Classic")
+{
+    <partial name="_Index_Classic" model="Model" />
+}
+else if (blogLayout == "Modern")
+{
+    <partial name="_Index_Modern" model="Model" />
+}
+else
+{
+    <partial name="_Index_Neutral" model="Model" />
+}

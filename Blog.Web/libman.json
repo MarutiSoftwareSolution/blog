@@ -1,0 +1,57 @@
+{
+  "version": "1.0",
+  "defaultProvider": "cdnjs",
+  "libraries": [
+    {
+      "library": "jquery@3.7.1",
+      "destination": "wwwroot/lib/jquery/dist/",
+      "files": [
+        "jquery.js",
+        "jquery.min.js",
+        "jquery.slim.js",
+        "jquery.slim.min.js"
+      ]
+    },
+    {
+      "library": "jquery-validate@1.21.0",
+      "destination": "wwwroot/lib/jquery-validation/dist/",
+      "files": [
+        "jquery.validate.js",
+        "jquery.validate.min.js",
+        "additional-methods.js",
+        "additional-methods.min.js"
+      ]
+    },
+    {
+      "library": "jquery-validation-unobtrusive@4.0.0",
+      "provider": "unpkg",
+      "destination": "wwwroot/lib/jquery-validation-unobtrusive/dist/",
+      "files": [
+        "jquery.validate.unobtrusive.js",
+        "jquery.validate.unobtrusive.min.js"
+      ]
+    },
+    {
+      "library": "twitter-bootstrap@5.3.3",
+      "destination": "wwwroot/lib/bootstrap/",
+      "files": [
+        "dist/css/bootstrap.css",
+        "dist/css/bootstrap.min.css",
+        "dist/css/bootstrap.min.css.map",
+        "dist/css/bootstrap-grid.css",
+        "dist/css/bootstrap-grid.min.css",
+        "dist/css/bootstrap-reboot.css",
+        "dist/css/bootstrap-reboot.min.css",
+        "dist/css/bootstrap-utilities.css",
+        "dist/css/bootstrap-utilities.min.css",
+        "dist/js/bootstrap.js",
+        "dist/js/bootstrap.min.js",
+        "dist/js/bootstrap.bundle.js",
+        "dist/js/bootstrap.bundle.min.js",
+        "dist/js/bootstrap.esm.js",
+        "dist/js/bootstrap.esm.min.js",
+        "LICENSE"
+      ]
+    }
+  ]
+}

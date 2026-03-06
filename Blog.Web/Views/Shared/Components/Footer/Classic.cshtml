@@ -1,0 +1,49 @@
+@inject Blog.Core.Interfaces.ISettingRepository SettingsRepo
+@{
+    var userSettings = await SettingsRepo.GetSettingsAsync(ViewBag.OwnerId ?? Guid.Empty);
+    var siteName = userSettings.SiteName;
+    var siteDescription = userSettings.SiteDescription;
+    string twitter   = userSettings.SocialTwitter;
+    string facebook  = userSettings.SocialFacebook;
+    string instagram = userSettings.SocialInstagram;
+    string youtube   = userSettings.SocialYoutube;
+    string linkedin  = userSettings.SocialLinkedin;
+    string github    = userSettings.SocialGithub;
+}
+
+@* CLASSIC footer — thick top border, left-aligned brand, solid icon buttons *@
+<footer class="border-t-4" style="background: var(--background); border-color: var(--foreground);">
+    <div class="container xl:max-w-6xl mx-auto px-4 py-10 md:py-14">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+            @* Brand block *@
+            <div class="flex flex-col gap-3 max-w-sm">
+                <a href="/" class="text-2xl font-black tracking-tight uppercase hover:opacity-70 transition-opacity"
+                   style="color: var(--foreground); font-family: var(--font-sans);">@siteName</a>
+                <div class="w-12 h-1" style="background: var(--primary);"></div>
+                <p class="text-sm leading-relaxed" style="color: var(--muted-foreground);">@siteDescription</p>
+            </div>
+            @* Socials *@
+            <div class="flex flex-col gap-3">
+                <span class="text-[10px] uppercase tracking-[0.2em] font-semibold" style="color: var(--muted-foreground);">Follow Us</span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <a href="/feed" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="RSS Feed">
+                        <i class="bi bi-rss-fill text-sm"></i>
+                    </a>
+                    @if (!string.IsNullOrEmpty(twitter))   { <a href="@twitter"   target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="X / Twitter"><i class="bi bi-twitter-x text-sm"></i></a> }
+                    @if (!string.IsNullOrEmpty(facebook))  { <a href="@facebook"  target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="Facebook"><i class="bi bi-facebook text-sm"></i></a> }
+                    @if (!string.IsNullOrEmpty(instagram)) { <a href="@instagram" target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="Instagram"><i class="bi bi-instagram text-sm"></i></a> }
+                    @if (!string.IsNullOrEmpty(youtube))   { <a href="@youtube"   target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="YouTube"><i class="bi bi-youtube text-sm"></i></a> }
+                    @if (!string.IsNullOrEmpty(linkedin))  { <a href="@linkedin"  target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="LinkedIn"><i class="bi bi-linkedin text-sm"></i></a> }
+                    @if (!string.IsNullOrEmpty(github))    { <a href="@github"    target="_blank" class="w-9 h-9 flex items-center justify-center border hover:opacity-60 transition-opacity" style="border-color: var(--foreground); color: var(--foreground);" title="GitHub"><i class="bi bi-github text-sm"></i></a> }
+                </div>
+            </div>
+        </div>
+    </div>
+    @* Copyright *@
+    <div class="border-t py-4 text-xs" style="border-color: var(--border); color: var(--muted-foreground);">
+        <div class="container xl:max-w-6xl mx-auto px-4 flex items-center justify-between">
+            <span>Copyright &copy; @DateTime.Now.Year @siteName</span>
+            <a href="/" class="hover:opacity-60 transition-opacity uppercase tracking-widest text-[10px]">Home</a>
+        </div>
+    </div>
+</footer>
